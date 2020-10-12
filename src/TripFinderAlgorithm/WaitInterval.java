@@ -10,4 +10,8 @@ public class WaitInterval extends TimelineInterval {
 	public POIInterval getNextPOIInterval() {
 		return this.nextPOIInterval;
 	}
+
+	public void setNextPOIInterval(POIInterval nextPOIInterval) {
+		this.nextPOIInterval = nextPOIInterval;
+	}
 }

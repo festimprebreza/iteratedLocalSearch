@@ -1,6 +1,6 @@
 package TripFinderAlgorithm;
 
-public class POI {
+public class POI implements Cloneable {
 	private int ID;
 	private float xCoordinate;
 	private float yCoordinate;
@@ -72,5 +72,11 @@ public class POI {
 		return String.format("ID: %d; X: %.2f, Y: %.2f; Duration: %.2f; Score: %.2f; Opens at %.2f and closes at %.2f.", 
 							this.ID, this.xCoordinate, this.yCoordinate, this.duration, this.score, this.openingTime,
 							this.closingTime);
+	}
+
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+		POI clonedPOI = (POI)super.clone();
+		return clonedPOI;
 	}
 }

@@ -1,6 +1,6 @@
 package TripFinderAlgorithm;
 
-public class Solution {
+public class Solution implements Cloneable {
 	private POIInterval startingPOIInterval;
 	private POIInterval endingPOIInterval;
 	private float score;
@@ -32,6 +32,14 @@ public class Solution {
 
 	public void setScore(float score) {
 		this.score = score;
+	}
+
+	public void setStartingPOIInterval(POIInterval startingPOIInterval) {
+		this.startingPOIInterval = startingPOIInterval;
+	}
+
+	public void setEndingPOIInterval(POIInterval endingPOIInterval) {
+		this.endingPOIInterval = endingPOIInterval;
 	}
 
 	public boolean notStuckInLocalOptimum() {
@@ -67,5 +75,15 @@ public class Solution {
 			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 		}
 		return result;
+	}
+
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+		Solution clonedSolution = (Solution)super.clone();
+
+		clonedSolution.setStartingPOIInterval((POIInterval)this.startingPOIInterval.clone());
+		clonedSolution.setEndingPOIInterval((POIInterval)this.endingPOIInterval.clone());
+		
+		return clonedSolution;
 	}
 }

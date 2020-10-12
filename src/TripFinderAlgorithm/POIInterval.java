@@ -1,6 +1,6 @@
 package TripFinderAlgorithm;
 
-public class POIInterval extends TimelineInterval {
+public class POIInterval extends TimelineInterval implements Cloneable {
 	private POI containedPOI;	
 	private POIInterval nextPOIInterval;
 	private POIInterval previousPOIInterval;
@@ -37,5 +37,26 @@ public class POIInterval extends TimelineInterval {
 
 	public void setTravelInterval(float startingTime, float endingTime) {
 		this.nextTravelInterval = new TravelInterval(startingTime, endingTime);
+	}
+
+	@Override
+	public Object clone() throws CloneNotSupportedException {
+		POIInterval clonedPOIInterval = (POIInterval)super.clone();
+		clonedPOIInterval.setNextPOIInterval((POIInterval)this.nextPOIInterval.clone());
+		clonedPOIInterval.setPreviousPOIInterval((POIInterval)this.previousPOIInterval.clone());
+		clonedPOIInterval.setTravelInterval(this.nextTravelInterval.getStartingTime(), 
+											this.nextTravelInterval.getEndingTime());
+
+		if(this.getTravelInterval().getNextWaitInterval() != null) {
+			clonedPOIInterval.getTravelInterval().setNextWaitInterval(
+						this.getTravelInterval().getNextWaitInterval().getStartingTime(), 
+						this.getTravelInterval().getNextWaitInterval().getEndingTime()
+			);
+			clonedPOIInterval.getTravelInterval().getNextWaitInterval().setNextPOIInterval(
+						clonedPOIInterval.getNextPOIInterval()
+			);
+		}
+		
+		return clonedPOIInterval;
 	}
 }
