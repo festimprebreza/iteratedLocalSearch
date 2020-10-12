@@ -7,17 +7,19 @@ import java.util.Scanner;
 public class ProblemInput {
 	private int tourCount;
 	private int visitablePOICount;
-	private POI startingAndEndingPOI;
+	private POI startingPOI;
+	private POI endingPOI;
 	private POI[] visitablePOIs;
 
 	private ProblemInput() {
 
 	}
 
-	private ProblemInput(int tourCount, int visitablePOICount, POI startingAndEndingPOI, POI[] visitablePOIs) { 
+	private ProblemInput(int tourCount, int visitablePOICount, POI startingPOI, POI endingPOI, POI[] visitablePOIs) { 
 		this.tourCount = tourCount;
 		this.visitablePOICount = visitablePOICount;
-		this.startingAndEndingPOI = startingAndEndingPOI;
+		this.startingPOI = startingPOI;
+		this.endingPOI = endingPOI;
 		this.visitablePOIs = visitablePOIs;
 	}
 
@@ -25,7 +27,8 @@ public class ProblemInput {
 		Scanner scanner = new Scanner(new File(filePath));
 		int tourCount = 0;
 		int visitablePOICount = 0;
-		POI startingAndEndingPOI = null;
+		POI startingPOI = null;
+		POI endingPOI = null;
 		POI[] visitablePOIs = null;
 
 		
@@ -41,7 +44,9 @@ public class ProblemInput {
 			}
 			else if(lineCounter == 1) {
 				String secondLine = scanner.nextLine();
-				startingAndEndingPOI = parsePOIFromLine(secondLine);
+				startingPOI = parsePOIFromLine(secondLine);
+				// FIX: do something smarter
+				endingPOI = parsePOIFromLine(secondLine);
 			}
 			else {
 				String currentLine = scanner.nextLine();
@@ -52,7 +57,7 @@ public class ProblemInput {
 		}
 		scanner.close();
 
-		return new ProblemInput(tourCount, visitablePOICount, startingAndEndingPOI, visitablePOIs);
+		return new ProblemInput(tourCount, visitablePOICount, startingPOI, endingPOI, visitablePOIs);
 	}
 	
 	public static POI parsePOIFromLine(String line) {
@@ -76,8 +81,12 @@ public class ProblemInput {
 		return this.visitablePOICount;
 	}
 
-	public POI getStartingAndEndingPOI() {
-		return this.startingAndEndingPOI;
+	public POI getStartingPOI() {
+		return this.startingPOI;
+	}
+
+	public POI getEndingPOI() {
+		return this.endingPOI;
 	}
 
 	public POI[] getVisitablePOIs() {

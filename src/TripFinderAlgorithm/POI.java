@@ -62,6 +62,11 @@ public class POI {
 		this.isAssigned = false;
 	}
 
+	public float getTravelTimeToPOI(POI nextPOI) {
+		return (float)Math.sqrt(Math.pow(this.xCoordinate - nextPOI.getXCoordinate(), 2) - 
+						Math.pow(this.yCoordinate - nextPOI.getYCoordinate(), 2));
+	}
+
 	@Override
 	public String toString() {
 		return String.format("ID: %d; X: %.2f, Y: %.2f; Duration: %.2f; Score: %.2f; Opens at %.2f and closes at %.2f.", 

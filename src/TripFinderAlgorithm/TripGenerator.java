@@ -14,5 +14,10 @@ public class TripGenerator {
 			System.out.println("Could not find file. " + ex.getMessage());
 			System.exit(1);
 		}
+
+		IteratedLocalSearch ILSAlgorithm = new IteratedLocalSearch(problemInput);
+		ILSAlgorithm.solve();
+		Solution bestSolution = ILSAlgorithm.getBestSolution();
+		System.out.println(bestSolution);
 	}
 }
