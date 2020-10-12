@@ -6,6 +6,8 @@ public class POIInterval extends TimelineInterval implements Cloneable {
 	private POIInterval previousPOIInterval;
 	private TravelInterval nextTravelInterval;
 
+	// FIX:
+	// you do not need to input endingTime as a parameter, you can just add startingTime and duration
 	public POIInterval(POI containedPOI, float startingTime, float endingTime) {
 		super(startingTime, endingTime);
 		this.containedPOI = containedPOI;

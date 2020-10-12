@@ -16,32 +16,42 @@ public class IteratedLocalSearch {
 		bestSolution = (Solution)currentSolution.clone();
 
 		int numberOfTimesWithNoImprovement = 0;
-		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
-			while(currentSolution.notStuckInLocalOptimum()) {
-				currentSolution.insertStep();
-			}
+		// FIX:
+		// delete the following 2 testing lines
+		currentSolution.insertStep();
+		System.out.println(currentSolution);
+		
+		// while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
+		// 	while(currentSolution.notStuckInLocalOptimum()) {
+		// 		currentSolution.insertStep();
+		// 	}
 
-			// if(currentSolution.getScore() > bestSolution.getScore()) {
-			// 	bestSolution = currentSolution;
-			// 	removeNConsecutiveVisits = 1;
-			// 	numberOfTimesWithNoImprovement = 0;
-			// }
-			// else {
-			// 	numberOfTimesWithNoImprovement++;
-			// }
+		// 	System.out.println(currentSolution);
 
-			// currentSolution.shakeStep();
-			// startRemoveAt += removeNConsecutiveVisits;
-			// removeNConsecutiveVisits++;
+		// 	if(currentSolution.getScore() > bestSolution.getScore()) {
+		// 		bestSolution = currentSolution;
+		// 		removeNConsecutiveVisits = 1;
+		// 		numberOfTimesWithNoImprovement = 0;
+		// 	}
+		// 	else {
+		// 		numberOfTimesWithNoImprovement++;
+		// 	}
 
-			// if(startRemoveAt > currentSolution.sizeOfSmallestTour()) {
-			// 	startRemoveAt -= currentSolution.sizeOfSmallestTour();
-			// }
+		// 	currentSolution.shakeStep();
+		// 	startRemoveAt += removeNConsecutiveVisits;
+		// 	removeNConsecutiveVisits++;
 
-			// if(removeNConsecutiveVisits == (int)(problemInput.getVisitablePOICount() / (3 * problemInput.getTourCount()))) {
-			// 	removeNConsecutiveVisits = 1;
-			// }
-		}
+		// 	// FIX:
+		// 	// maybe this update should be done with the size of the smallest tour before shake step, not
+		// 	// after it
+		// 	if(startRemoveAt > currentSolution.sizeOfSmallestTour()) {
+		// 		startRemoveAt -= currentSolution.sizeOfSmallestTour();
+		// 	}
+
+		// 	if(removeNConsecutiveVisits == (int)(problemInput.getVisitablePOICount() / (3 * problemInput.getTourCount()))) {
+		// 		removeNConsecutiveVisits = 1;
+		// 	}
+		// }
 	}
 
 	public Solution getBestSolution() {

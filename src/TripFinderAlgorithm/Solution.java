@@ -1,10 +1,17 @@
 package TripFinderAlgorithm;
 
+import jdk.net.NetworkPermission;
+
 public class Solution implements Cloneable {
 	private POIInterval[] startingPOIIntervals;
 	private POIInterval[] endingPOIIntervals;
 	private ProblemInput problemInput;
 	private float score;
+
+	private POI POIWithShortestVisitDuration;
+	// FIX:
+	// idea: add an array that holds sizes of all tours; then you just find the minimum of that array
+	private int sizeOfSmallestTour;
 
 	public Solution(ProblemInput problemInput) {
 		this.problemInput = problemInput;
@@ -32,6 +39,8 @@ public class Solution implements Cloneable {
 										this.startingPOIIntervals[tour].getTravelInterval().getEndingTime(),
 										this.endingPOIIntervals[tour].getStartingTime()
 										);
+			
+			POIWithShortestVisitDuration = problemInput.getVisitablePOIs()[0];
 		}
 	}
 
@@ -53,12 +62,128 @@ public class Solution implements Cloneable {
 
 
 	public boolean notStuckInLocalOptimum() {
-		// if no tour has space left to put POIs
-		return true;
+		if(POIWithShortestVisitDuration.isAssigned()) {
+			POIWithShortestVisitDuration = getThePOIWithShortestDurationThatIsUnassigned();
+		}
+
+		// if the function returned null, then that means all POIs are assigned, so we are stuck in a local optimum
+		if(POIWithShortestVisitDuration == null) {
+			return true;
+		}
+
+		POIInterval currentPOIInterval = null;
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			currentPOIInterval = startingPOIIntervals[tour];
+			while(currentPOIInterval.getTravelInterval() != null) {
+				if(currentPOIInterval.getTravelInterval().getNextWaitInterval() == null) {
+					currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+				}
+				else {
+					if(currentPOIInterval.getTravelInterval().getNextWaitInterval().getDuration() <= 
+								POIWithShortestVisitDuration.getDuration()) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
+	public POI getThePOIWithShortestDurationThatIsUnassigned() {
+		int minimalDuration = 10000;
+		POI shortestPOI = null;
+		for(POI currentPOI: problemInput.getVisitablePOIs()) {
+			if(currentPOI.isAssigned()) {
+				continue;
+			}
+			if(currentPOI.getDuration() < minimalDuration) {
+				shortestPOI = currentPOI;
+			}
+		}
+		return shortestPOI;
 	}
 
 	public void insertStep() {
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			POIInterval currentPOIInterval = startingPOIIntervals[tour];
 
+			for(POI currentPOI: problemInput.getVisitablePOIs()) {	
+				while(currentPOIInterval.getTravelInterval() != null) {
+					if(currentPOIInterval.getTravelInterval().getNextWaitInterval() == null) {
+						currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+					}
+					else {
+						if(canInsertAfterThisPOI(currentPOI, currentPOIInterval)) {
+							insertPOI(currentPOI, currentPOIInterval);
+							return;
+						}
+						currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+					}
+				}
+			}
+		}
+	}
+
+	public boolean canInsertAfterThisPOI(POI POIToBeInserted, POIInterval POIIntervalBeforeTheInsertionPlace) {
+		// FIX:
+		// add shift and stuff here
+		if(POIToBeInserted.getOpeningTime() + POIToBeInserted.getDuration() + 
+			POIToBeInserted.getTravelTimeToPOI(POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getPOI()) > 
+			POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getStartingTime()) {
+			return false;
+		}
+
+		// FIX:
+		// time check; maybe put into a function; also maybe just give as parameters, prevPOI, nextPOI and WaitInterval
+		// oooor just extract them here at the beginning of the function
+		if(POIToBeInserted.getDuration() + 
+			POIIntervalBeforeTheInsertionPlace.getPOI().getTravelTimeToPOI(POIToBeInserted) + 
+			POIToBeInserted.getTravelTimeToPOI(POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getPOI()) -
+			POIIntervalBeforeTheInsertionPlace.getTravelInterval().getDuration() >
+			POIIntervalBeforeTheInsertionPlace.getTravelInterval().getNextWaitInterval().getDuration()) {
+				return false;
+			}
+		return true;
+	}
+
+	public void insertPOI(POI POIToBeInserted, POIInterval POIIntervalBeforeTheInsertionPlace) {
+		// create traveling interval first
+		POIIntervalBeforeTheInsertionPlace.setTravelInterval(POIIntervalBeforeTheInsertionPlace.getEndingTime(), 
+									POIIntervalBeforeTheInsertionPlace.getPOI().getTravelTimeToPOI(POIToBeInserted) + 
+									POIIntervalBeforeTheInsertionPlace.getEndingTime());
+		// define when it starts (considering opening time)
+		float startingTime = POIIntervalBeforeTheInsertionPlace.getTravelInterval().getEndingTime();
+		if(POIToBeInserted.getOpeningTime() > startingTime) {
+			startingTime = POIToBeInserted.getOpeningTime();
+		}
+		// create POIInterval
+		POIInterval newPOIInterval = new POIInterval(POIToBeInserted, startingTime, 
+													startingTime + POIToBeInserted.getDuration());
+		// add travel interval from new POI to the next one
+		newPOIInterval.setTravelInterval(newPOIInterval.getEndingTime(), 
+						newPOIInterval.getEndingTime() + 
+						POIToBeInserted.getTravelTimeToPOI(POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getPOI()));
+		// edit previousPOIInterval and nextPOIInterval for all attendants
+		newPOIInterval.setPreviousPOIInterval(POIIntervalBeforeTheInsertionPlace);
+		newPOIInterval.setNextPOIInterval(POIIntervalBeforeTheInsertionPlace.getNextPOIInterval());
+		POIIntervalBeforeTheInsertionPlace.setNextPOIInterval(newPOIInterval);
+		newPOIInterval.getNextPOIInterval().setPreviousPOIInterval(newPOIInterval);
+
+		// check if free interval before
+		if(POIIntervalBeforeTheInsertionPlace.getTravelInterval().getEndingTime() < newPOIInterval.getStartingTime()) {
+			POIIntervalBeforeTheInsertionPlace.getTravelInterval().setNextWaitInterval(
+						POIIntervalBeforeTheInsertionPlace.getTravelInterval().getEndingTime(), 
+						newPOIInterval.getStartingTime());
+			POIIntervalBeforeTheInsertionPlace.getTravelInterval().getNextWaitInterval().setNextPOIInterval(newPOIInterval);
+		}
+		// check if free interval after
+		if(newPOIInterval.getTravelInterval().getEndingTime() < newPOIInterval.getNextPOIInterval().getStartingTime()) {
+			newPOIInterval.getTravelInterval().setNextWaitInterval(
+				newPOIInterval.getTravelInterval().getEndingTime(),
+				newPOIInterval.getNextPOIInterval().getStartingTime());
+			newPOIInterval.getTravelInterval().getNextWaitInterval().setNextPOIInterval(newPOIInterval.getNextPOIInterval());
+		}
 	}
 
 	public void shakeStep() {
@@ -66,7 +191,7 @@ public class Solution implements Cloneable {
 	}
 
 	public int sizeOfSmallestTour() {
-		return 2;
+		return sizeOfSmallestTour;
 	}
 
 	@Override
