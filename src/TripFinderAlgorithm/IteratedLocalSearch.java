@@ -12,39 +12,35 @@ public class IteratedLocalSearch {
 	}
 
 	public void solve() {
-		Solution currentSolution = new Solution(problemInput.getStartingPOI(), problemInput.getEndingPOI());
-		// FIX: 
-		// deep clone here
-		bestSolution = currentSolution;
+		Solution currentSolution = new Solution(problemInput);
+		bestSolution = (Solution)currentSolution.clone();
 
 		int numberOfTimesWithNoImprovement = 0;
 		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
 			while(currentSolution.notStuckInLocalOptimum()) {
-				currentSolution.insert();
+				currentSolution.insertStep();
 			}
 
-			if(currentSolution.getScore() > bestSolution.getScore()) {
-				// FIX: 
-				// deep clone here
-				bestSolution = currentSolution;
-				removeNConsecutiveVisits = 1;
-				numberOfTimesWithNoImprovement = 0;
-			}
-			else {
-				numberOfTimesWithNoImprovement++;
-			}
+			// if(currentSolution.getScore() > bestSolution.getScore()) {
+			// 	bestSolution = currentSolution;
+			// 	removeNConsecutiveVisits = 1;
+			// 	numberOfTimesWithNoImprovement = 0;
+			// }
+			// else {
+			// 	numberOfTimesWithNoImprovement++;
+			// }
 
-			currentSolution.shake();
-			startRemoveAt += removeNConsecutiveVisits;
-			removeNConsecutiveVisits++;
+			// currentSolution.shakeStep();
+			// startRemoveAt += removeNConsecutiveVisits;
+			// removeNConsecutiveVisits++;
 
-			if(startRemoveAt > currentSolution.sizeOfSmallestTour()) {
-				startRemoveAt -= currentSolution.sizeOfSmallestTour();
-			}
+			// if(startRemoveAt > currentSolution.sizeOfSmallestTour()) {
+			// 	startRemoveAt -= currentSolution.sizeOfSmallestTour();
+			// }
 
-			if(removeNConsecutiveVisits == (int)(problemInput.getVisitablePOICount() / (3 * problemInput.getTourCount()))) {
-				removeNConsecutiveVisits = 1;
-			}
+			// if(removeNConsecutiveVisits == (int)(problemInput.getVisitablePOICount() / (3 * problemInput.getTourCount()))) {
+			// 	removeNConsecutiveVisits = 1;
+			// }
 		}
 	}
 

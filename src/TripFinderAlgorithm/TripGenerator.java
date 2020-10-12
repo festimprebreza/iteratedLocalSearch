@@ -7,6 +7,7 @@ public class TripGenerator {
 		String instancePath = args[0];
 
 		ProblemInput problemInput = null;
+
 		try {
 			problemInput = ProblemInput.getProblemInputFromFile(instancePath);
 		} catch (FileNotFoundException ex) {

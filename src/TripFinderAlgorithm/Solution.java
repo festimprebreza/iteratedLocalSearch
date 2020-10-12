@@ -1,29 +1,46 @@
 package TripFinderAlgorithm;
 
 public class Solution implements Cloneable {
-	private POIInterval startingPOIInterval;
-	private POIInterval endingPOIInterval;
+	private POIInterval[] startingPOIIntervals;
+	private POIInterval[] endingPOIIntervals;
+	private ProblemInput problemInput;
 	private float score;
 
-	public Solution(POI startingPOI, POI endingPOI) {
-		this.startingPOIInterval = new POIInterval(startingPOI, startingPOI.getOpeningTime(), startingPOI.getOpeningTime());
-		this.endingPOIInterval = new POIInterval(endingPOI, endingPOI.getClosingTime(), endingPOI.getClosingTime());
+	public Solution(ProblemInput problemInput) {
+		this.problemInput = problemInput;
+		POI startingPOI = problemInput.getStartingPOI();
+		POI endingPOI = problemInput.getEndingPOI();
+		startingPOIIntervals = new POIInterval[problemInput.getTourCount()];
+		endingPOIIntervals = new POIInterval[problemInput.getTourCount()];
 
-		this.startingPOIInterval.setNextPOIInterval(this.endingPOIInterval);
-		this.endingPOIInterval.setPreviousPOIInterval(startingPOIInterval);
-
-		this.startingPOIInterval.setTravelInterval(
-										this.startingPOIInterval.getEndingTime(), 
-										this.startingPOIInterval.getPOI().getTravelTimeToPOI(this.endingPOIInterval.getPOI())
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			this.startingPOIIntervals[tour] = new POIInterval(startingPOI, startingPOI.getOpeningTime(), 
+														startingPOI.getOpeningTime());
+			this.endingPOIIntervals[tour] = new POIInterval(endingPOI, endingPOI.getClosingTime(), 
+														endingPOI.getClosingTime());
+	
+			this.startingPOIIntervals[tour].setNextPOIInterval(this.endingPOIIntervals[tour]);
+			this.endingPOIIntervals[tour].setPreviousPOIInterval(this.startingPOIIntervals[tour]);
+	
+			this.startingPOIIntervals[tour].setTravelInterval(
+											this.startingPOIIntervals[tour].getEndingTime(), 
+											this.startingPOIIntervals[tour].getPOI().getTravelTimeToPOI(
+													this.endingPOIIntervals[tour].getPOI()
+												)
+											);
+			this.startingPOIIntervals[tour].getTravelInterval().setNextWaitInterval(
+										this.startingPOIIntervals[tour].getTravelInterval().getEndingTime(),
+										this.endingPOIIntervals[tour].getStartingTime()
 										);
-		this.startingPOIInterval.getTravelInterval().setNextWaitInterval(
-									this.startingPOIInterval.getTravelInterval().getEndingTime(),
-									this.endingPOIInterval.getStartingTime()
-									);
+		}
 	}
 
-	public void shake() {
+	public void setStartingPOIInterval(POIInterval startingPOIInterval[]) {
+		this.startingPOIIntervals = startingPOIInterval;
+	}
 
+	public void setEndingPOIInterval(POIInterval endingPOIInterval[]) {
+		this.endingPOIIntervals = endingPOIInterval;
 	}
 
 	public float getScore() {
@@ -34,19 +51,17 @@ public class Solution implements Cloneable {
 		this.score = score;
 	}
 
-	public void setStartingPOIInterval(POIInterval startingPOIInterval) {
-		this.startingPOIInterval = startingPOIInterval;
-	}
-
-	public void setEndingPOIInterval(POIInterval endingPOIInterval) {
-		this.endingPOIInterval = endingPOIInterval;
-	}
 
 	public boolean notStuckInLocalOptimum() {
+		// if no tour has space left to put POIs
 		return true;
 	}
 
-	public void insert() {
+	public void insertStep() {
+
+	}
+
+	public void shakeStep() {
 
 	}
 
@@ -57,33 +72,57 @@ public class Solution implements Cloneable {
 	@Override
 	public String toString() {
 		String result = "Score: " + this.score + "\r\n";
-		POIInterval currentPOIInterval = this.startingPOIInterval;
-		TravelInterval currentTravelInterval;
-		while(currentPOIInterval != null) {
-			currentTravelInterval = currentPOIInterval.getTravelInterval();
-
-			result += "|" + currentPOIInterval.getStartingTime() + "____" + currentPOIInterval.getPOI().getID() + 
-					"____" + currentPOIInterval.getEndingTime() + "|";
-
-			if(currentTravelInterval != null) {
-				result += "---->" + currentTravelInterval.getEndingTime();
-				if(currentTravelInterval.getNextWaitInterval() != null) {
-					result += ".....";
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			POIInterval currentPOIInterval = this.startingPOIIntervals[tour];
+			TravelInterval currentTravelInterval;
+			while(currentPOIInterval != null) {
+				currentTravelInterval = currentPOIInterval.getTravelInterval();
+	
+				result += "|" + currentPOIInterval.getStartingTime() + "____" + currentPOIInterval.getPOI().getID() + 
+						"____" + currentPOIInterval.getEndingTime() + "|";
+	
+				if(currentTravelInterval != null) {
+					result += "---->" + currentTravelInterval.getEndingTime();
+					if(currentTravelInterval.getNextWaitInterval() != null) {
+						result += ".....";
+					}
 				}
+	
+				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 			}
-
-			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+			result += "\r\n\r\n\r\n";
 		}
 		return result;
 	}
 
 	@Override
-	public Object clone() throws CloneNotSupportedException {
-		Solution clonedSolution = (Solution)super.clone();
+	public Object clone() {
+		Solution clonedSolution = null;
+		try {
+			clonedSolution = (Solution)super.clone();
+		}
+		catch(CloneNotSupportedException ex) {
+			System.out.println("Could not clone Solution. " + ex.getMessage());
+			return null;
+		}
 
-		clonedSolution.setStartingPOIInterval((POIInterval)this.startingPOIInterval.clone());
-		clonedSolution.setEndingPOIInterval((POIInterval)this.endingPOIInterval.clone());
-		
+		POIInterval[] clonedStartingPOIIntervals = new POIInterval[this.startingPOIIntervals.length];
+		POIInterval[] clonedEndingPOIIntervals = new POIInterval[this.endingPOIIntervals.length];
+
+		for(int tour = 0; tour < this.problemInput.getTourCount(); tour++) {
+			try {
+				clonedStartingPOIIntervals[tour] = (POIInterval)this.startingPOIIntervals[tour].clone();
+				clonedEndingPOIIntervals[tour] = (POIInterval)this.endingPOIIntervals[tour].clone();
+			}
+			catch(CloneNotSupportedException ex) {
+				System.out.println("Could not clone POIInterval's. " + ex.getMessage());
+				return null;
+			}
+		}
+
+		clonedSolution.setStartingPOIInterval(clonedStartingPOIIntervals);
+		clonedSolution.setEndingPOIInterval(clonedEndingPOIIntervals);
+
 		return clonedSolution;
 	}
 }

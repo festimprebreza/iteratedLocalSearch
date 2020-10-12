@@ -42,19 +42,22 @@ public class POIInterval extends TimelineInterval implements Cloneable {
 	@Override
 	public Object clone() throws CloneNotSupportedException {
 		POIInterval clonedPOIInterval = (POIInterval)super.clone();
-		clonedPOIInterval.setNextPOIInterval((POIInterval)this.nextPOIInterval.clone());
-		clonedPOIInterval.setPreviousPOIInterval((POIInterval)this.previousPOIInterval.clone());
-		clonedPOIInterval.setTravelInterval(this.nextTravelInterval.getStartingTime(), 
-											this.nextTravelInterval.getEndingTime());
+		if(this.nextPOIInterval != null) {
+			clonedPOIInterval.setNextPOIInterval((POIInterval)this.nextPOIInterval.clone());
+			clonedPOIInterval.setTravelInterval(this.nextTravelInterval.getStartingTime(), 
+												this.nextTravelInterval.getEndingTime());
+		}		
 
-		if(this.getTravelInterval().getNextWaitInterval() != null) {
-			clonedPOIInterval.getTravelInterval().setNextWaitInterval(
-						this.getTravelInterval().getNextWaitInterval().getStartingTime(), 
-						this.getTravelInterval().getNextWaitInterval().getEndingTime()
-			);
-			clonedPOIInterval.getTravelInterval().getNextWaitInterval().setNextPOIInterval(
-						clonedPOIInterval.getNextPOIInterval()
-			);
+		if(this.getTravelInterval() != null) {
+			if(this.getTravelInterval().getNextWaitInterval() != null) {
+				clonedPOIInterval.getTravelInterval().setNextWaitInterval(
+							this.getTravelInterval().getNextWaitInterval().getStartingTime(), 
+							this.getTravelInterval().getNextWaitInterval().getEndingTime()
+				);
+				clonedPOIInterval.getTravelInterval().getNextWaitInterval().setNextPOIInterval(
+							clonedPOIInterval.getNextPOIInterval()
+				);
+			}
 		}
 		
 		return clonedPOIInterval;
