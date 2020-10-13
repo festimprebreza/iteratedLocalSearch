@@ -1,9 +1,9 @@
 package TripFinderAlgorithm;
 
 public class IteratedLocalSearch {
-	private final int MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT = 150;
+	private final int MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT = 2;
 	private int startRemoveAt = 0;
-	private int removeNConsecutiveVisits = 1;
+	private int removeNConsecutiveVisits = 3;
 	private ProblemInput problemInput;
 	private Solution bestSolution;
 
@@ -23,18 +23,17 @@ public class IteratedLocalSearch {
 			}
 
 			System.out.println(currentSolution);
-			break;
 
-		// 	if(currentSolution.getScore() > bestSolution.getScore()) {
-		// 		bestSolution = currentSolution;
-		// 		removeNConsecutiveVisits = 1;
-		// 		numberOfTimesWithNoImprovement = 0;
-		// 	}
-		// 	else {
-		// 		numberOfTimesWithNoImprovement++;
-		// 	}
+			if(currentSolution.getScore() > bestSolution.getScore()) {
+				bestSolution = (Solution)currentSolution.clone();
+				removeNConsecutiveVisits = 3;
+				numberOfTimesWithNoImprovement = 0;
+			}
+			else {
+				numberOfTimesWithNoImprovement++;
+			}
 
-		// 	currentSolution.shakeStep();
+			currentSolution.shakeStep(startRemoveAt, removeNConsecutiveVisits);
 		// 	startRemoveAt += removeNConsecutiveVisits;
 		// 	removeNConsecutiveVisits++;
 

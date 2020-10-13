@@ -58,7 +58,7 @@ public class POI implements Cloneable {
 		this.isAssigned = true;
 	}
 
-	public void unAssign() {
+	public void unassign() {
 		this.isAssigned = false;
 	}
 
@@ -66,7 +66,8 @@ public class POI implements Cloneable {
 		// FIX:
 		// check again
 		return (float)Math.round((Math.sqrt(Math.pow(this.xCoordinate - nextPOI.getXCoordinate(), 2) + 
-								Math.pow(this.yCoordinate - nextPOI.getYCoordinate(), 2))) * 100) / 100.0f;
+											Math.pow(this.yCoordinate - nextPOI.getYCoordinate(), 2))) 
+								* 100) / 100.0f;
 	}
 
 	@Override

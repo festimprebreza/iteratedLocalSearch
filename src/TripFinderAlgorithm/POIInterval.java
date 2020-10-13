@@ -38,7 +38,9 @@ public class POIInterval extends TimelineInterval implements Cloneable {
 	}
 
 	public void setTravelInterval(float startingTime, float endingTime) {
-		this.nextTravelInterval = new TravelInterval(startingTime, endingTime);
+		// FIX: 
+		// fix that round thing
+		this.nextTravelInterval = new TravelInterval(startingTime, Math.round(endingTime * 100) / 100f);
 	}
 
 	@Override

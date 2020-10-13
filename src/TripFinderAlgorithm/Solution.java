@@ -197,8 +197,52 @@ public class Solution implements Cloneable {
 		POIToBeInserted.setAssigned();
 	}
 
-	public void shakeStep() {
+	public void shakeStep(int startRemoveAt, int removeNConsecutiveVisits) {
 		this.stuckInLocalOptimum = false;
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			int currentDayRemovals = 0;
+			int currentPOIPosition = 0;
+			POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+			while(true) {
+				if(currentPOIPosition != startRemoveAt) {
+					currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+					currentPOIPosition++;
+					continue;
+				}
+				else {
+					break;
+				}
+			}
+			while(currentDayRemovals < removeNConsecutiveVisits) {
+				POIInterval nextPOIInterval = currentPOIInterval.getNextPOIInterval();
+				if(nextPOIInterval == endingPOIIntervals[tour]) {
+					nextPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+				}
+				removePOIInterval(currentPOIInterval);
+				currentDayRemovals++;
+				currentPOIInterval = nextPOIInterval;
+			}
+		}
+
+		// shift all other visits
+
+	}
+
+	public void removePOIInterval(POIInterval currentPOIInterval) {
+		// set unassigned
+		currentPOIInterval.getPOI().unassign();
+		this.score -= currentPOIInterval.getPOI().getScore();
+		// change pointers
+		currentPOIInterval.getPreviousPOIInterval().setNextPOIInterval(currentPOIInterval.getNextPOIInterval());
+		currentPOIInterval.getNextPOIInterval().setPreviousPOIInterval(currentPOIInterval.getPreviousPOIInterval());
+		// create travel space
+		currentPOIInterval.getPreviousPOIInterval().setTravelInterval(
+							currentPOIInterval.getPreviousPOIInterval().getEndingTime(),
+							currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getNextPOIInterval().getPOI()));
+		// create waiting time							
+		currentPOIInterval.getPreviousPOIInterval().getTravelInterval().setNextWaitInterval(
+										currentPOIInterval.getPreviousPOIInterval().getTravelInterval().getEndingTime(),
+										currentPOIInterval.getNextPOIInterval().getStartingTime());
 	}
 
 	public int sizeOfSmallestTour() {
@@ -209,23 +253,27 @@ public class Solution implements Cloneable {
 	public String toString() {
 		String result = "Score: " + this.score + "\r\n";
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			String resultPart1 = "";
+			String resultPart2 = "";
 			POIInterval currentPOIInterval = this.startingPOIIntervals[tour];
 			TravelInterval currentTravelInterval;
 			while(currentPOIInterval != null) {
 				currentTravelInterval = currentPOIInterval.getTravelInterval();
 	
-				result += "|" + currentPOIInterval.getStartingTime() + "____" + currentPOIInterval.getPOI().getID() + 
+				resultPart1 += currentPOIInterval.getPOI().getID() + " ";
+				resultPart2 += "|" + currentPOIInterval.getStartingTime() + "____" + currentPOIInterval.getPOI().getID() + 
 						"____" + currentPOIInterval.getEndingTime() + "|";
 	
 				if(currentTravelInterval != null) {
-					result += "---->" + currentTravelInterval.getEndingTime();
+					resultPart2 += "---->" + currentTravelInterval.getEndingTime();
 					if(currentTravelInterval.getNextWaitInterval() != null) {
-						result += ".....";
+						resultPart2 += ".....";
 					}
 				}
 	
 				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 			}
+			result += resultPart1 + "\r\n" + resultPart2;
 			result += "\r\n\r\n\r\n";
 		}
 		return result;
