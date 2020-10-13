@@ -16,17 +16,14 @@ public class IteratedLocalSearch {
 		bestSolution = (Solution)currentSolution.clone();
 
 		int numberOfTimesWithNoImprovement = 0;
-		// FIX:
-		// delete the following 2 testing lines
-		currentSolution.insertStep();
-		System.out.println(currentSolution);
 		
-		// while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
-		// 	while(currentSolution.notStuckInLocalOptimum()) {
-		// 		currentSolution.insertStep();
-		// 	}
+		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
+			while(currentSolution.notStuckInLocalOptimum()) {
+				currentSolution.insertStep();
+			}
 
-		// 	System.out.println(currentSolution);
+			System.out.println(currentSolution);
+			break;
 
 		// 	if(currentSolution.getScore() > bestSolution.getScore()) {
 		// 		bestSolution = currentSolution;
@@ -51,7 +48,7 @@ public class IteratedLocalSearch {
 		// 	if(removeNConsecutiveVisits == (int)(problemInput.getVisitablePOICount() / (3 * problemInput.getTourCount()))) {
 		// 		removeNConsecutiveVisits = 1;
 		// 	}
-		// }
+		}
 	}
 
 	public Solution getBestSolution() {

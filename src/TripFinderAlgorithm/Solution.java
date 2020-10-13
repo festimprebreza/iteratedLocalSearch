@@ -1,12 +1,11 @@
 package TripFinderAlgorithm;
 
-import jdk.net.NetworkPermission;
-
 public class Solution implements Cloneable {
 	private POIInterval[] startingPOIIntervals;
 	private POIInterval[] endingPOIIntervals;
 	private ProblemInput problemInput;
 	private float score;
+	private boolean stuckInLocalOptimum;
 
 	private POI POIWithShortestVisitDuration;
 	// FIX:
@@ -62,32 +61,36 @@ public class Solution implements Cloneable {
 
 
 	public boolean notStuckInLocalOptimum() {
-		if(POIWithShortestVisitDuration.isAssigned()) {
-			POIWithShortestVisitDuration = getThePOIWithShortestDurationThatIsUnassigned();
-		}
+		// if(POIWithShortestVisitDuration.isAssigned()) {
+		// 	POIWithShortestVisitDuration = getThePOIWithShortestDurationThatIsUnassigned();
+		// }
 
-		// if the function returned null, then that means all POIs are assigned, so we are stuck in a local optimum
-		if(POIWithShortestVisitDuration == null) {
-			return true;
-		}
+		// // if the function returned null, then that means all POIs are assigned, so we are stuck in a local optimum
+		// if(POIWithShortestVisitDuration == null) {
+		// 	return true;
+		// }
 
-		POIInterval currentPOIInterval = null;
-		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
-			currentPOIInterval = startingPOIIntervals[tour];
-			while(currentPOIInterval.getTravelInterval() != null) {
-				if(currentPOIInterval.getTravelInterval().getNextWaitInterval() == null) {
-					currentPOIInterval = currentPOIInterval.getNextPOIInterval();
-				}
-				else {
-					if(currentPOIInterval.getTravelInterval().getNextWaitInterval().getDuration() <= 
-								POIWithShortestVisitDuration.getDuration()) {
-						return true;
-					}
-				}
-			}
-		}
+		// POIInterval currentPOIInterval = null;
+		// for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+		// 	currentPOIInterval = startingPOIIntervals[tour];
+		// 	while(currentPOIInterval.getTravelInterval() != null) {
+		// 		if(currentPOIInterval.getTravelInterval().getNextWaitInterval() == null) {
+		// 			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+		// 		}
+		// 		else {
+		// 			if(currentPOIInterval.getTravelInterval().getNextWaitInterval().getDuration() <= 
+		// 						POIWithShortestVisitDuration.getDuration()) {
+		// 				return true;
+		// 			}
+		// 		}
+		// 	}
+		// }
 
-		return false;
+		// return false;
+		// FIX:
+		// check if this implementation is good? because for now the function insertStep does two things at once
+		// which is not good usually; it's side effect is setting a flag; check to see if you can implement this smarter
+		return !this.stuckInLocalOptimum;
 	}
 
 	public POI getThePOIWithShortestDurationThatIsUnassigned() {
@@ -108,7 +111,10 @@ public class Solution implements Cloneable {
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			POIInterval currentPOIInterval = startingPOIIntervals[tour];
 
-			for(POI currentPOI: problemInput.getVisitablePOIs()) {	
+			for(POI currentPOI: problemInput.getVisitablePOIs()) {
+				if(currentPOI.isAssigned()) {
+					continue;
+				}
 				while(currentPOIInterval.getTravelInterval() != null) {
 					if(currentPOIInterval.getTravelInterval().getNextWaitInterval() == null) {
 						currentPOIInterval = currentPOIInterval.getNextPOIInterval();
@@ -116,6 +122,8 @@ public class Solution implements Cloneable {
 					else {
 						if(canInsertAfterThisPOI(currentPOI, currentPOIInterval)) {
 							insertPOI(currentPOI, currentPOIInterval);
+							this.score += currentPOI.getScore();
+							this.stuckInLocalOptimum = false;
 							return;
 						}
 						currentPOIInterval = currentPOIInterval.getNextPOIInterval();
@@ -123,6 +131,7 @@ public class Solution implements Cloneable {
 				}
 			}
 		}
+		this.stuckInLocalOptimum = true;
 	}
 
 	public boolean canInsertAfterThisPOI(POI POIToBeInserted, POIInterval POIIntervalBeforeTheInsertionPlace) {
@@ -184,10 +193,12 @@ public class Solution implements Cloneable {
 				newPOIInterval.getNextPOIInterval().getStartingTime());
 			newPOIInterval.getTravelInterval().getNextWaitInterval().setNextPOIInterval(newPOIInterval.getNextPOIInterval());
 		}
+
+		POIToBeInserted.setAssigned();
 	}
 
 	public void shakeStep() {
-
+		this.stuckInLocalOptimum = false;
 	}
 
 	public int sizeOfSmallestTour() {

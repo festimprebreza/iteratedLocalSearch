@@ -63,8 +63,10 @@ public class POI implements Cloneable {
 	}
 
 	public float getTravelTimeToPOI(POI nextPOI) {
-		return (float)(Math.sqrt(Math.abs(Math.pow(this.xCoordinate - nextPOI.getXCoordinate(), 2) - 
-								Math.pow(this.yCoordinate - nextPOI.getYCoordinate(), 2))));
+		// FIX:
+		// check again
+		return (float)Math.round((Math.sqrt(Math.pow(this.xCoordinate - nextPOI.getXCoordinate(), 2) + 
+								Math.pow(this.yCoordinate - nextPOI.getYCoordinate(), 2))) * 100) / 100.0f;
 	}
 
 	@Override
