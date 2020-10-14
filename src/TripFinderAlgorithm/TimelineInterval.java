@@ -26,6 +26,6 @@ public abstract class TimelineInterval {
 	}
 
 	public float getDuration() {
-		return this.endsAt - this.startsAt;
+		return Math.round((this.endsAt - this.startsAt) * 100) / 100.0f;
 	}
 }

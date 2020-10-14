@@ -142,17 +142,17 @@ public class Solution implements Cloneable {
 			POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getStartingTime()) {
 			return false;
 		}
-
+		
 		// FIX:
 		// time check; maybe put into a function; also maybe just give as parameters, prevPOI, nextPOI and WaitInterval
 		// oooor just extract them here at the beginning of the function
 		if(POIToBeInserted.getDuration() + 
-			POIIntervalBeforeTheInsertionPlace.getPOI().getTravelTimeToPOI(POIToBeInserted) + 
-			POIToBeInserted.getTravelTimeToPOI(POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getPOI()) -
-			POIIntervalBeforeTheInsertionPlace.getTravelInterval().getDuration() >
-			POIIntervalBeforeTheInsertionPlace.getTravelInterval().getNextWaitInterval().getDuration()) {
-				return false;
-			}
+		POIIntervalBeforeTheInsertionPlace.getPOI().getTravelTimeToPOI(POIToBeInserted) + 
+		POIToBeInserted.getTravelTimeToPOI(POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getPOI()) -
+		POIIntervalBeforeTheInsertionPlace.getTravelInterval().getDuration() >
+		POIIntervalBeforeTheInsertionPlace.getTravelInterval().getNextWaitInterval().getDuration()) {
+			return false;
+		}
 		return true;
 	}
 
@@ -222,10 +222,20 @@ public class Solution implements Cloneable {
 				currentDayRemovals++;
 				currentPOIInterval = nextPOIInterval;
 			}
+			// shift for each tour
+			while(true) {
+				if(canShiftPOIInterval(currentPOIInterval)) {
+					shiftPOIInterval(currentPOIInterval);
+					currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+					if(currentPOIInterval == endingPOIIntervals[tour]) {
+						break;
+					}
+				}
+				else {
+					break;
+				}
+			}
 		}
-
-		// shift all other visits
-
 	}
 
 	public void removePOIInterval(POIInterval currentPOIInterval) {
@@ -243,6 +253,55 @@ public class Solution implements Cloneable {
 		currentPOIInterval.getPreviousPOIInterval().getTravelInterval().setNextWaitInterval(
 										currentPOIInterval.getPreviousPOIInterval().getTravelInterval().getEndingTime(),
 										currentPOIInterval.getNextPOIInterval().getStartingTime());
+	}
+
+	public boolean canShiftPOIInterval(POIInterval currentPOIInterval) {
+		if(currentPOIInterval.getPOI().getOpeningTime() < currentPOIInterval.getStartingTime() &&
+			currentPOIInterval.getPreviousPOIInterval().getTravelInterval().getEndingTime() < currentPOIInterval.getStartingTime()) {
+			return true;
+		}
+		return false;
+	}
+
+	public void shiftPOIInterval(POIInterval currentPOIInterval) {
+		// FIX: 
+		// check how much can you shift(determine starting Time)
+		float startingTime = currentPOIInterval.getPreviousPOIInterval().getTravelInterval().getEndingTime();
+		if(currentPOIInterval.getPOI().getOpeningTime() > startingTime) {
+			startingTime = currentPOIInterval.getPOI().getOpeningTime();
+		}
+
+		float shiftedFor = currentPOIInterval.getStartingTime() - startingTime;
+		// update start and end time
+		// FIX:
+		// create a function in POIInterval that uses just the starting time to update the ending time also (using duration)
+		// FIX:
+		// maybe also create a functioin called shift() that does this automatically just using one parameter
+		currentPOIInterval.setStartingTime(startingTime);
+		currentPOIInterval.setEndingTime(startingTime + currentPOIInterval.getPOI().getDuration());
+		// update ending of free time before this visit
+		currentPOIInterval.getPreviousPOIInterval().getTravelInterval().getNextWaitInterval().setEndingTime(startingTime);
+		// update travel interval times
+		// FIX:
+		// same here, create a function shift
+		currentPOIInterval.getTravelInterval().setStartingTime(Math.round((currentPOIInterval.getTravelInterval().getStartingTime() - shiftedFor) * 100) / 100.0f);
+		currentPOIInterval.getTravelInterval().setEndingTime(Math.round((currentPOIInterval.getTravelInterval().getEndingTime() - shiftedFor) * 100) / 100.0f);
+		// check if there are any new free intervals left, etc. 
+		if(currentPOIInterval.getTravelInterval().getEndingTime() < currentPOIInterval.getNextPOIInterval().getStartingTime()) {
+			//(maybe don't create a new wait interval, 
+			// just change the values of the current one)
+			// if there was no free time, create a new one, of course
+			// FIX:
+			// i think this part is duplicate with the removePOIInterval() func
+			if(currentPOIInterval.getTravelInterval().getNextWaitInterval() == null) {
+				currentPOIInterval.getTravelInterval().setNextWaitInterval(currentPOIInterval.getTravelInterval().getEndingTime(), 
+																	currentPOIInterval.getNextPOIInterval().getStartingTime());
+				currentPOIInterval.getTravelInterval().getNextWaitInterval().setNextPOIInterval(currentPOIInterval.getNextPOIInterval());
+			}
+			else {
+				currentPOIInterval.getTravelInterval().getNextWaitInterval().setStartingTime(currentPOIInterval.getTravelInterval().getEndingTime());
+			}			
+		}
 	}
 
 	public int sizeOfSmallestTour() {

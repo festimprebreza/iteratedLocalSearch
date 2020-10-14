@@ -16,7 +16,6 @@ public class IteratedLocalSearch {
 		bestSolution = (Solution)currentSolution.clone();
 
 		int numberOfTimesWithNoImprovement = 0;
-		
 		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
 			while(currentSolution.notStuckInLocalOptimum()) {
 				currentSolution.insertStep();
@@ -34,8 +33,13 @@ public class IteratedLocalSearch {
 			}
 
 			currentSolution.shakeStep(startRemoveAt, removeNConsecutiveVisits);
-		// 	startRemoveAt += removeNConsecutiveVisits;
-		// 	removeNConsecutiveVisits++;
+			System.out.println(currentSolution);
+			System.out.println("========================================================");
+			System.out.println("========================================================");
+			System.out.println("========================================================");
+			System.out.println("========================================================");
+			// startRemoveAt += removeNConsecutiveVisits;
+			// removeNConsecutiveVisits++;
 
 		// 	// FIX:
 		// 	// maybe this update should be done with the size of the smallest tour before shake step, not
