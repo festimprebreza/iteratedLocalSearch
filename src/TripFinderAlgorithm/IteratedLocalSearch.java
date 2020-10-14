@@ -15,6 +15,7 @@ public class IteratedLocalSearch {
 		Solution currentSolution = new Solution(problemInput);
 		bestSolution = (Solution)currentSolution.clone();
 
+		int removeNConsecutiveVisitsLimit = (int)(problemInput.getVisitablePOICount() / (3 * problemInput.getTourCount()));
 		int numberOfTimesWithNoImprovement = 0;
 		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
 			while(currentSolution.notStuckInLocalOptimum()) {
@@ -31,26 +32,22 @@ public class IteratedLocalSearch {
 			else {
 				numberOfTimesWithNoImprovement++;
 			}
-
+			System.out.println("BEFORE SHAKE; SIZE OF SMALLEST TOUR: " + currentSolution.sizeOfSmallestTour());
 			currentSolution.shakeStep(startRemoveAt, removeNConsecutiveVisits);
 			System.out.println(currentSolution);
 			System.out.println("========================================================");
 			System.out.println("========================================================");
-			System.out.println("========================================================");
-			System.out.println("========================================================");
-			// startRemoveAt += removeNConsecutiveVisits;
-			// removeNConsecutiveVisits++;
+			startRemoveAt += removeNConsecutiveVisits;
+			removeNConsecutiveVisits++;
 
-		// 	// FIX:
-		// 	// maybe this update should be done with the size of the smallest tour before shake step, not
-		// 	// after it
-		// 	if(startRemoveAt > currentSolution.sizeOfSmallestTour()) {
-		// 		startRemoveAt -= currentSolution.sizeOfSmallestTour();
-		// 	}
+			System.out.println("AFTER SHAKE; SIZE OF SMALLEST TOUR: " + currentSolution.sizeOfSmallestTour());
+			if(startRemoveAt > currentSolution.sizeOfSmallestTour()) {
+				startRemoveAt -= currentSolution.sizeOfSmallestTour();
+			}
 
-		// 	if(removeNConsecutiveVisits == (int)(problemInput.getVisitablePOICount() / (3 * problemInput.getTourCount()))) {
-		// 		removeNConsecutiveVisits = 1;
-		// 	}
+			if(removeNConsecutiveVisits == removeNConsecutiveVisitsLimit) {
+				removeNConsecutiveVisits = 1;
+			}
 		}
 	}
 

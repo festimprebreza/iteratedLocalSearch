@@ -10,7 +10,7 @@ public class Solution implements Cloneable {
 	private POI POIWithShortestVisitDuration;
 	// FIX:
 	// idea: add an array that holds sizes of all tours; then you just find the minimum of that array
-	private int sizeOfSmallestTour;
+	private int[] tourSizes;
 
 	public Solution(ProblemInput problemInput) {
 		this.problemInput = problemInput;
@@ -41,6 +41,8 @@ public class Solution implements Cloneable {
 			
 			POIWithShortestVisitDuration = problemInput.getVisitablePOIs()[0];
 		}
+
+		tourSizes = new int[problemInput.getTourCount()];
 	}
 
 	public void setStartingPOIInterval(POIInterval startingPOIInterval[]) {
@@ -124,6 +126,7 @@ public class Solution implements Cloneable {
 							insertPOI(currentPOI, currentPOIInterval);
 							this.score += currentPOI.getScore();
 							this.stuckInLocalOptimum = false;
+							this.tourSizes[tour] += 1;
 							return;
 						}
 						currentPOIInterval = currentPOIInterval.getNextPOIInterval();
@@ -219,6 +222,7 @@ public class Solution implements Cloneable {
 					nextPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
 				}
 				removePOIInterval(currentPOIInterval);
+				this.tourSizes[tour] -= 1;
 				currentDayRemovals++;
 				currentPOIInterval = nextPOIInterval;
 			}
@@ -305,6 +309,12 @@ public class Solution implements Cloneable {
 	}
 
 	public int sizeOfSmallestTour() {
+		int sizeOfSmallestTour = tourSizes[0];
+		for(int tour = 1; tour < tourSizes.length; tour++) {
+			if(tourSizes[tour] < sizeOfSmallestTour) {
+				sizeOfSmallestTour = tourSizes[tour];
+			}
+		}
 		return sizeOfSmallestTour;
 	}
 
