@@ -6,8 +6,6 @@ public class Solution implements Cloneable {
 	private ProblemInput problemInput;
 	private float score;
 	private boolean stuckInLocalOptimum;
-
-	private POI POIWithShortestVisitDuration;
 	// FIX:
 	// idea: add an array that holds sizes of all tours; then you just find the minimum of that array
 	private int[] tourSizes;
@@ -38,8 +36,6 @@ public class Solution implements Cloneable {
 										this.startingPOIIntervals[tour].getTravelInterval().getEndingTime(),
 										this.endingPOIIntervals[tour].getStartingTime()
 										);
-			
-			POIWithShortestVisitDuration = problemInput.getVisitablePOIs()[0];
 		}
 
 		tourSizes = new int[problemInput.getTourCount()];
@@ -63,50 +59,7 @@ public class Solution implements Cloneable {
 
 
 	public boolean notStuckInLocalOptimum() {
-		// if(POIWithShortestVisitDuration.isAssigned()) {
-		// 	POIWithShortestVisitDuration = getThePOIWithShortestDurationThatIsUnassigned();
-		// }
-
-		// // if the function returned null, then that means all POIs are assigned, so we are stuck in a local optimum
-		// if(POIWithShortestVisitDuration == null) {
-		// 	return true;
-		// }
-
-		// POIInterval currentPOIInterval = null;
-		// for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
-		// 	currentPOIInterval = startingPOIIntervals[tour];
-		// 	while(currentPOIInterval.getTravelInterval() != null) {
-		// 		if(currentPOIInterval.getTravelInterval().getNextWaitInterval() == null) {
-		// 			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
-		// 		}
-		// 		else {
-		// 			if(currentPOIInterval.getTravelInterval().getNextWaitInterval().getDuration() <= 
-		// 						POIWithShortestVisitDuration.getDuration()) {
-		// 				return true;
-		// 			}
-		// 		}
-		// 	}
-		// }
-
-		// return false;
-		// FIX:
-		// check if this implementation is good? because for now the function insertStep does two things at once
-		// which is not good usually; it's side effect is setting a flag; check to see if you can implement this smarter
 		return !this.stuckInLocalOptimum;
-	}
-
-	public POI getThePOIWithShortestDurationThatIsUnassigned() {
-		int minimalDuration = 10000;
-		POI shortestPOI = null;
-		for(POI currentPOI: problemInput.getVisitablePOIs()) {
-			if(currentPOI.isAssigned()) {
-				continue;
-			}
-			if(currentPOI.getDuration() < minimalDuration) {
-				shortestPOI = currentPOI;
-			}
-		}
-		return shortestPOI;
 	}
 
 	public void insertStep() {
@@ -217,9 +170,15 @@ public class Solution implements Cloneable {
 				}
 			}
 			while(currentDayRemovals < removeNConsecutiveVisits) {
+				// FIX: 
+				// check logic here again
 				POIInterval nextPOIInterval = currentPOIInterval.getNextPOIInterval();
-				if(nextPOIInterval == endingPOIIntervals[tour]) {
-					nextPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+				if(currentPOIInterval == endingPOIIntervals[tour]) {
+					currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+					if(currentPOIInterval == endingPOIIntervals[tour]) {
+						break;
+					}
+					continue;
 				}
 				removePOIInterval(currentPOIInterval);
 				this.tourSizes[tour] -= 1;
@@ -228,12 +187,12 @@ public class Solution implements Cloneable {
 			}
 			// shift for each tour
 			while(true) {
+				if(currentPOIInterval == endingPOIIntervals[tour]) {
+					break;
+				}
 				if(canShiftPOIInterval(currentPOIInterval)) {
 					shiftPOIInterval(currentPOIInterval);
 					currentPOIInterval = currentPOIInterval.getNextPOIInterval();
-					if(currentPOIInterval == endingPOIIntervals[tour]) {
-						break;
-					}
 				}
 				else {
 					break;

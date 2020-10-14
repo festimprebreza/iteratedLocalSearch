@@ -1,9 +1,9 @@
 package TripFinderAlgorithm;
 
 public class IteratedLocalSearch {
-	private final int MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT = 2;
+	private final int MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT = 150;
 	private int startRemoveAt = 0;
-	private int removeNConsecutiveVisits = 3;
+	private int removeNConsecutiveVisits = 1;
 	private ProblemInput problemInput;
 	private Solution bestSolution;
 
@@ -26,13 +26,12 @@ public class IteratedLocalSearch {
 
 			if(currentSolution.getScore() > bestSolution.getScore()) {
 				bestSolution = (Solution)currentSolution.clone();
-				removeNConsecutiveVisits = 3;
+				removeNConsecutiveVisits = 1;
 				numberOfTimesWithNoImprovement = 0;
 			}
 			else {
 				numberOfTimesWithNoImprovement++;
 			}
-			System.out.println("BEFORE SHAKE; SIZE OF SMALLEST TOUR: " + currentSolution.sizeOfSmallestTour());
 			currentSolution.shakeStep(startRemoveAt, removeNConsecutiveVisits);
 			System.out.println(currentSolution);
 			System.out.println("========================================================");
@@ -40,9 +39,13 @@ public class IteratedLocalSearch {
 			startRemoveAt += removeNConsecutiveVisits;
 			removeNConsecutiveVisits++;
 
-			System.out.println("AFTER SHAKE; SIZE OF SMALLEST TOUR: " + currentSolution.sizeOfSmallestTour());
 			if(startRemoveAt > currentSolution.sizeOfSmallestTour()) {
-				startRemoveAt -= currentSolution.sizeOfSmallestTour();
+				if(currentSolution.sizeOfSmallestTour() == 0) {
+					startRemoveAt = 0;
+				}
+				else {
+					startRemoveAt %= currentSolution.sizeOfSmallestTour();
+				}
 			}
 
 			if(removeNConsecutiveVisits == removeNConsecutiveVisitsLimit) {
