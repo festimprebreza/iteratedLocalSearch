@@ -6,11 +6,11 @@ public class POIInterval extends TimelineInterval implements Cloneable {
 	private POIInterval previousPOIInterval;
 	private TravelInterval nextTravelInterval;
 	private WaitInterval waitInterval;
-	private float maxShift;
+	private int maxShift;
 
 	// FIX:
 	// you do not need to input endingTime as a parameter, you can just add startingTime and duration
-	public POIInterval(POI containedPOI, float startingTime, float endingTime) {
+	public POIInterval(POI containedPOI, int startingTime, int endingTime) {
 		super(startingTime, endingTime);
 		this.containedPOI = containedPOI;
 	}
@@ -39,10 +39,10 @@ public class POIInterval extends TimelineInterval implements Cloneable {
 		return this.nextTravelInterval;
 	}
 
-	public void setTravelInterval(float startingTime, float endingTime) {
+	public void setTravelInterval(int startingTime, int endingTime) {
 		// FIX: 
 		// fix that round thing
-		this.nextTravelInterval = new TravelInterval(startingTime, Math.round(endingTime * 100) / 100f);
+		this.nextTravelInterval = new TravelInterval(startingTime, endingTime);
 	}
 
 	public WaitInterval getWaitInterval() {
@@ -55,22 +55,22 @@ public class POIInterval extends TimelineInterval implements Cloneable {
 		this.waitInterval = waitInterval;
 	}
 
-	public float getMaxShift() {
+	public int getMaxShift() {
 		return maxShift;
 	}
 
-	public void setMaxShift(float maxShift) {
+	public void setMaxShift(int maxShift) {
 		this.maxShift = maxShift;
 	}
 
 	public void updateMaxShift() {
-		float newMaxShiftParameter1 = this.getPOI().getClosingTime() - this.getStartingTime();
-		float newMaxShiftParameter2 = this.getNextPOIInterval().getWaitTime() + this.getNextPOIInterval().getMaxShift();
-		float newMaxShift = Float.compare(newMaxShiftParameter1, newMaxShiftParameter2) < 0? newMaxShiftParameter1: newMaxShiftParameter2;
-		this.maxShift = Math.round(newMaxShift * 100) / 100.0f;
+		int newMaxShiftParameter1 = this.getPOI().getClosingTime() - this.getStartingTime();
+		int newMaxShiftParameter2 = this.getNextPOIInterval().getWaitTime() + this.getNextPOIInterval().getMaxShift();
+		int newMaxShift = newMaxShiftParameter1 < newMaxShiftParameter2? newMaxShiftParameter1: newMaxShiftParameter2;
+		this.maxShift = newMaxShift;
 	}
 
-	public float getWaitTime() {
+	public int getWaitTime() {
 		if(this.waitInterval == null) {
 			return 0;
 		}

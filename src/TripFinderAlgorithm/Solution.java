@@ -4,7 +4,7 @@ public class Solution implements Cloneable {
 	private POIInterval[] startingPOIIntervals;
 	private POIInterval[] endingPOIIntervals;
 	private ProblemInput problemInput;
-	private float score;
+	private int score;
 	private boolean stuckInLocalOptimum;
 	// FIX:
 	// idea: add an array that holds sizes of all tours; then you just find the minimum of that array
@@ -29,7 +29,7 @@ public class Solution implements Cloneable {
 			this.startingPOIIntervals[tour].setTravelInterval(
 											this.startingPOIIntervals[tour].getEndingTime(), 
 											this.startingPOIIntervals[tour].getPOI().getTravelTimeToPOI(
-													this.endingPOIIntervals[tour].getPOI()
+													this.endingPOIIntervals[tour].getPOI().getID()
 												)
 											);
 			this.startingPOIIntervals[tour].getTravelInterval().setNextWaitInterval(
@@ -54,11 +54,11 @@ public class Solution implements Cloneable {
 		this.endingPOIIntervals = endingPOIInterval;
 	}
 
-	public float getScore() {
+	public int getScore() {
 		return this.score;
 	}
 
-	public void setScore(float score) {
+	public void setScore(int score) {
 		this.score = score;
 	}
 
@@ -106,7 +106,7 @@ public class Solution implements Cloneable {
 		// 	return false;
 		// }
 		
-		float shiftForNewPOI = getShift(POIToBeInserted, POIIntervalBeforeTheInsertionPlace);
+		int shiftForNewPOI = getShift(POIToBeInserted, POIIntervalBeforeTheInsertionPlace);
 
 		if(shiftForNewPOI > POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getWaitTime() +
 							POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getMaxShift()) {
@@ -130,29 +130,29 @@ public class Solution implements Cloneable {
 		return true;
 	}
 
-	public float getShift(POI POIToBeInserted, POIInterval POIIntervalBeforeTheInsertionPlace) {
-		float travelTimeToNewPOI = POIIntervalBeforeTheInsertionPlace.getPOI().getTravelTimeToPOI(POIToBeInserted);
-		float travelTimeFromNewPOIToNext = POIToBeInserted.getTravelTimeToPOI(POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getPOI());
-		float currentTravelTime = POIIntervalBeforeTheInsertionPlace.getTravelInterval().getDuration();
+	public int getShift(POI POIToBeInserted, POIInterval POIIntervalBeforeTheInsertionPlace) {
+		int travelTimeToNewPOI = POIIntervalBeforeTheInsertionPlace.getPOI().getTravelTimeToPOI(POIToBeInserted.getID());
+		int travelTimeFromNewPOIToNext = POIToBeInserted.getTravelTimeToPOI(POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getPOI().getID());
+		int currentTravelTime = POIIntervalBeforeTheInsertionPlace.getTravelInterval().getDuration();
 
-		float arrivingTimeForNewPOI = POIIntervalBeforeTheInsertionPlace.getEndingTime() + travelTimeToNewPOI;
-		float waitComponent = POIToBeInserted.getOpeningTime() - arrivingTimeForNewPOI;
-		float waitForNewPOI = waitComponent > 0? waitComponent: 0;
+		int arrivingTimeForNewPOI = POIIntervalBeforeTheInsertionPlace.getEndingTime() + travelTimeToNewPOI;
+		int waitComponent = POIToBeInserted.getOpeningTime() - arrivingTimeForNewPOI;
+		int waitForNewPOI = waitComponent > 0? waitComponent: 0;
 
-		float shiftForNewPOI = travelTimeToNewPOI + waitForNewPOI + POIToBeInserted.getDuration() + travelTimeFromNewPOIToNext - 
+		int shiftForNewPOI = travelTimeToNewPOI + waitForNewPOI + POIToBeInserted.getDuration() + travelTimeFromNewPOIToNext - 
 								currentTravelTime;
 
-		return Math.round(shiftForNewPOI * 100) / 100.0f;
+		return shiftForNewPOI;
 	}
 
 	public void insertPOI(POI POIToBeInserted, POIInterval POIIntervalBeforeTheInsertionPlace) {
-		float lastShift = getShift(POIToBeInserted, POIIntervalBeforeTheInsertionPlace);
+		int lastShift = getShift(POIToBeInserted, POIIntervalBeforeTheInsertionPlace);
 		// create traveling interval first
 		POIIntervalBeforeTheInsertionPlace.setTravelInterval(POIIntervalBeforeTheInsertionPlace.getEndingTime(), 
 								POIIntervalBeforeTheInsertionPlace.getEndingTime() + 
-								POIIntervalBeforeTheInsertionPlace.getPOI().getTravelTimeToPOI(POIToBeInserted));
+								POIIntervalBeforeTheInsertionPlace.getPOI().getTravelTimeToPOI(POIToBeInserted.getID()));
 		// define when it starts (considering opening time)
-		float startingTime = POIIntervalBeforeTheInsertionPlace.getTravelInterval().getEndingTime();
+		int startingTime = POIIntervalBeforeTheInsertionPlace.getTravelInterval().getEndingTime();
 		if(POIToBeInserted.getOpeningTime() > startingTime) {
 			startingTime = POIToBeInserted.getOpeningTime();
 		}
@@ -162,7 +162,7 @@ public class Solution implements Cloneable {
 		// add travel interval from new POI to the next one
 		newPOIInterval.setTravelInterval(newPOIInterval.getEndingTime(), 
 						newPOIInterval.getEndingTime() + 
-						POIToBeInserted.getTravelTimeToPOI(POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getPOI()));
+						POIToBeInserted.getTravelTimeToPOI(POIIntervalBeforeTheInsertionPlace.getNextPOIInterval().getPOI().getID()));
 		// edit previousPOIInterval and nextPOIInterval for all attendants
 		newPOIInterval.setPreviousPOIInterval(POIIntervalBeforeTheInsertionPlace);
 		newPOIInterval.setNextPOIInterval(POIIntervalBeforeTheInsertionPlace.getNextPOIInterval());
@@ -198,31 +198,31 @@ public class Solution implements Cloneable {
 		// in fact I need to update the last POI also
 		while(true) {
 			// update new wait
-			float newWaitParameter = currentPOIInterval.getWaitTime() - lastShift;
-			float newWaitForCurrentPOIInterval = newWaitParameter > 0? newWaitParameter: 0;
-			if(Float.compare(newWaitForCurrentPOIInterval, 0) == 0) {
+			int newWaitParameter = currentPOIInterval.getWaitTime() - lastShift;
+			int newWaitForCurrentPOIInterval = newWaitParameter > 0? newWaitParameter: 0;
+			if(newWaitForCurrentPOIInterval == 0) {
 				currentPOIInterval.getPreviousPOIInterval().getTravelInterval().setNextWaitInterval(null);
 				currentPOIInterval.setWaitInterval(null);
 			}
 			else {
-				float newWaitStartingTime = currentPOIInterval.getStartingTime() - newWaitParameter;
+				int newWaitStartingTime = currentPOIInterval.getStartingTime() - newWaitParameter;
 				currentPOIInterval.getWaitInterval().setStartingTime(newWaitStartingTime);
 			}
 			// update this shift, and set lastShift to it
-			float newLastShiftParameter = newWaitParameter * (-1);
-			lastShift = newLastShiftParameter > 0? newLastShiftParameter: 0f;
-			if(Float.compare(lastShift, 0f) == 0) {
+			int newLastShiftParameter = newWaitParameter * (-1);
+			lastShift = newLastShiftParameter > 0? newLastShiftParameter: 0;
+			if(lastShift == 0) {
 				break;
 			}
 			// update starting time
-			currentPOIInterval.setStartingTime(Math.round((currentPOIInterval.getStartingTime() + lastShift) * 100) / 100.0f);
-			currentPOIInterval.setEndingTime(Math.round((currentPOIInterval.getStartingTime() + currentPOIInterval.getPOI().getDuration()) * 100) / 100.0f);
+			currentPOIInterval.setStartingTime(currentPOIInterval.getStartingTime() + lastShift);
+			currentPOIInterval.setEndingTime(currentPOIInterval.getStartingTime() + currentPOIInterval.getPOI().getDuration());
 			// update travel time
 			currentPOIInterval.getTravelInterval().setStartingTime(currentPOIInterval.getEndingTime());
-			currentPOIInterval.getTravelInterval().setEndingTime(Math.round((currentPOIInterval.getTravelInterval().getStartingTime() + 
-					currentPOIInterval.getPOI().getTravelTimeToPOI(currentPOIInterval.getNextPOIInterval().getPOI())) * 100) / 100.0f);
+			currentPOIInterval.getTravelInterval().setEndingTime(currentPOIInterval.getTravelInterval().getStartingTime() + 
+					currentPOIInterval.getPOI().getTravelTimeToPOI(currentPOIInterval.getNextPOIInterval().getPOI().getID()));
 			// update new maxShift
-			currentPOIInterval.setMaxShift(Math.round((currentPOIInterval.getMaxShift() - lastShift) * 100) / 100.0f);
+			currentPOIInterval.setMaxShift(currentPOIInterval.getMaxShift() - lastShift);
 
 			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 		}
@@ -231,7 +231,7 @@ public class Solution implements Cloneable {
 		currentPOIInterval = newPOIInterval;
 		while(currentPOIInterval.getPOI().getDuration() > 0) {
 			currentPOIInterval.updateMaxShift();
-			if(Float.compare(currentPOIInterval.getMaxShift(), 0) == 0) {
+			if(currentPOIInterval.getMaxShift() == 0) {
 				break;
 			}
 			currentPOIInterval = currentPOIInterval.getPreviousPOIInterval();
@@ -297,7 +297,7 @@ public class Solution implements Cloneable {
 		currentPOIInterval.getPreviousPOIInterval().setTravelInterval(
 							currentPOIInterval.getPreviousPOIInterval().getEndingTime(),
 							currentPOIInterval.getPreviousPOIInterval().getEndingTime() + 
-							currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getNextPOIInterval().getPOI()));
+							currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getNextPOIInterval().getPOI().getID()));
 		// create waiting time							
 		currentPOIInterval.getPreviousPOIInterval().getTravelInterval().setNextWaitInterval(
 										currentPOIInterval.getPreviousPOIInterval().getTravelInterval().getEndingTime(),
@@ -317,12 +317,12 @@ public class Solution implements Cloneable {
 	public void shiftPOIInterval(POIInterval currentPOIInterval) {
 		// FIX: 
 		// check how much can you shift(determine starting Time)
-		float startingTime = currentPOIInterval.getPreviousPOIInterval().getTravelInterval().getEndingTime();
+		int startingTime = currentPOIInterval.getPreviousPOIInterval().getTravelInterval().getEndingTime();
 		if(currentPOIInterval.getPOI().getOpeningTime() > startingTime) {
 			startingTime = currentPOIInterval.getPOI().getOpeningTime();
 		}
 
-		float shiftedFor = currentPOIInterval.getStartingTime() - startingTime;
+		int shiftedFor = currentPOIInterval.getStartingTime() - startingTime;
 		// update start and end time
 		// FIX:
 		// create a function in POIInterval that uses just the starting time to update the ending time also (using duration)
@@ -331,7 +331,7 @@ public class Solution implements Cloneable {
 		currentPOIInterval.setStartingTime(startingTime);
 		currentPOIInterval.setEndingTime(startingTime + currentPOIInterval.getPOI().getDuration());
 		// update ending of free time before this visit
-		if(Float.compare(currentPOIInterval.getWaitInterval().getStartingTime(), startingTime) == 0) {
+		if(currentPOIInterval.getWaitInterval().getStartingTime() == startingTime) {
 			currentPOIInterval.getPreviousPOIInterval().getTravelInterval().setNextWaitInterval(null);
 			currentPOIInterval.setWaitInterval(null);
 		}
@@ -341,8 +341,8 @@ public class Solution implements Cloneable {
 		// update travel interval times
 		// FIX:
 		// same here, create a function shift
-		currentPOIInterval.getTravelInterval().setStartingTime(Math.round((currentPOIInterval.getTravelInterval().getStartingTime() - shiftedFor) * 100) / 100.0f);
-		currentPOIInterval.getTravelInterval().setEndingTime(Math.round((currentPOIInterval.getTravelInterval().getEndingTime() - shiftedFor) * 100) / 100.0f);
+		currentPOIInterval.getTravelInterval().setStartingTime(currentPOIInterval.getTravelInterval().getStartingTime() - shiftedFor);
+		currentPOIInterval.getTravelInterval().setEndingTime(currentPOIInterval.getTravelInterval().getEndingTime() - shiftedFor);
 		// check if there are any new free intervals left, etc. 
 		if(currentPOIInterval.getTravelInterval().getEndingTime() < currentPOIInterval.getNextPOIInterval().getStartingTime()) {
 			//(maybe don't create a new wait interval, 
@@ -384,11 +384,11 @@ public class Solution implements Cloneable {
 				currentTravelInterval = currentPOIInterval.getTravelInterval();
 	
 				resultPart1 += currentPOIInterval.getPOI().getID() + " ";
-				resultPart2 += "\r\n|" + currentPOIInterval.getStartingTime() + "____" + currentPOIInterval.getPOI().getID() + 
-						"____" + currentPOIInterval.getEndingTime() + "|";
+				resultPart2 += "\r\n|" + (currentPOIInterval.getStartingTime() / 100.0f) + "____" + currentPOIInterval.getPOI().getID() + 
+						"____" + (currentPOIInterval.getEndingTime() / 100.0f) + "|";
 	
 				if(currentTravelInterval != null) {
-					resultPart2 += "---->" + currentTravelInterval.getEndingTime();
+					resultPart2 += "---->" + (currentTravelInterval.getEndingTime() / 100.0f);
 					if(currentTravelInterval.getNextWaitInterval() != null) {
 						resultPart2 += ".....";
 					}

@@ -3,7 +3,7 @@ package TripFinderAlgorithm;
 public class TravelInterval extends TimelineInterval {
 	private WaitInterval nextWaitInterval;
 
-	public TravelInterval(float startingTime, float endingTime) {
+	public TravelInterval(int startingTime, int endingTime) {
 		super(startingTime, endingTime);
 	}
 
@@ -11,7 +11,7 @@ public class TravelInterval extends TimelineInterval {
 		return this.nextWaitInterval;
 	}
 
-	public void setNextWaitInterval(float startingTime, float endingTime) {
+	public void setNextWaitInterval(int startingTime, int endingTime) {
 		this.nextWaitInterval = new WaitInterval(startingTime, endingTime);
 	}
 

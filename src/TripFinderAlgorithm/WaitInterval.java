@@ -3,7 +3,7 @@ package TripFinderAlgorithm;
 public class WaitInterval extends TimelineInterval {
 	private POIInterval nextPOIInterval;
 
-	public WaitInterval(float startingTime, float endingTime) {
+	public WaitInterval(int startingTime, int endingTime) {
 		super(startingTime, endingTime);
 	}
 

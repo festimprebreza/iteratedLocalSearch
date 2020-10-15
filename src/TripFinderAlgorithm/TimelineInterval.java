@@ -1,31 +1,31 @@
 package TripFinderAlgorithm;
 
 public abstract class TimelineInterval {
-	private float startsAt;
-	private float endsAt;
+	private int startsAt;
+	private int endsAt;
 
-	public TimelineInterval(float startingTime, float endingTime) {
+	public TimelineInterval(int startingTime, int endingTime) {
 		this.startsAt = startingTime;
 		this.endsAt = endingTime;
 	}
 
-	public float getStartingTime() {
+	public int getStartingTime() {
 		return this.startsAt;
 	}
 
-	public void setStartingTime(float startingTime) {
+	public void setStartingTime(int startingTime) {
 		this.startsAt = startingTime;
 	}
 
-	public float getEndingTime() {
+	public int getEndingTime() {
 		return this.endsAt;
 	}
 
-	public void setEndingTime(float endingTime) {
+	public void setEndingTime(int endingTime) {
 		this.endsAt = endingTime;
 	}
 
-	public float getDuration() {
-		return Math.round((this.endsAt - this.startsAt) * 100) / 100.0f;
+	public int getDuration() {
+		return this.endsAt - this.startsAt;
 	}
 }

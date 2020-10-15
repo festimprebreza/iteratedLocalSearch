@@ -1,18 +1,21 @@
 package TripFinderAlgorithm;
 
+import java.util.HashMap;
+
 public class POI implements Cloneable {
 	private int ID;
-	private float xCoordinate;
-	private float yCoordinate;
-	private float duration;
-	private float score;
-	private float openingTime;
-	private float closingTime;
+	private long xCoordinate;
+	private long yCoordinate;
+	private int duration;
+	private int score;
+	private int openingTime;
+	private int closingTime;
+	private HashMap<Integer, Integer> travelDistances;
 
 	private boolean isAssigned;
 
-	public POI(int ID, float xCoordinate, float yCoordinate, float duration, 
-				float score, float openingTime, float closingTime) {
+	public POI(int ID, long xCoordinate, long yCoordinate, int duration, 
+				int score, int openingTime, int closingTime) {
 		this.ID = ID;
 		this.xCoordinate = xCoordinate;
 		this.yCoordinate = yCoordinate;
@@ -26,27 +29,27 @@ public class POI implements Cloneable {
 		return this.ID;
 	}
 
-	public float getXCoordinate() {
+	public long getXCoordinate() {
 		return this.xCoordinate;
 	}
 
-	public float getYCoordinate() {
+	public long getYCoordinate() {
 		return this.yCoordinate;
 	}
 
-	public float getDuration() {
+	public int getDuration() {
 		return this.duration;
 	}
 
-	public float getScore() {
+	public int getScore() {
 		return this.score;
 	}
 
-	public float getOpeningTime() {
+	public int getOpeningTime() {
 		return this.openingTime;
 	}
 
-	public float getClosingTime() {
+	public int getClosingTime() {
 		return this.closingTime;
 	}
 
@@ -62,19 +65,22 @@ public class POI implements Cloneable {
 		this.isAssigned = false;
 	}
 
-	public float getTravelTimeToPOI(POI nextPOI) {
-		// FIX:
-		// check again
-		return (float)Math.round((Math.sqrt(Math.pow(this.xCoordinate - nextPOI.getXCoordinate(), 2) + 
-											Math.pow(this.yCoordinate - nextPOI.getYCoordinate(), 2))) 
-								* 100) / 100.0f;
+	public void setTravelDistances(HashMap<Integer, Integer> travelDistances) {
+		this.travelDistances = travelDistances;
+	}
+
+	public int getTravelTimeToPOI(int toPOIID) {
+		if(this.ID == toPOIID) {
+			return 0;
+		}
+		return travelDistances.get(toPOIID);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("ID: %d; X: %.2f, Y: %.2f; Duration: %.2f; Score: %.2f; Opens at %.2f and closes at %.2f.", 
-							this.ID, this.xCoordinate, this.yCoordinate, this.duration, this.score, this.openingTime,
-							this.closingTime);
+		return String.format("ID: %d; X: %.3f, Y: %.3f; Duration: %.2f; Score: %.2f; Opens at %.2f and closes at %.2f.", 
+							this.ID, this.xCoordinate / 1000.0f, this.yCoordinate / 1000.0f, this.duration / 100.0f, 
+							this.score / 100.0f, this.openingTime / 100.0f, this.closingTime / 100.0f);
 	}
 
 	@Override
