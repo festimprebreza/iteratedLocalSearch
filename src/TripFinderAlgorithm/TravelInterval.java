@@ -14,4 +14,8 @@ public class TravelInterval extends TimelineInterval {
 	public void setNextWaitInterval(float startingTime, float endingTime) {
 		this.nextWaitInterval = new WaitInterval(startingTime, endingTime);
 	}
+
+	public void setNextWaitInterval(WaitInterval waitInterval) {
+		this.nextWaitInterval = waitInterval;
+	}
 }
