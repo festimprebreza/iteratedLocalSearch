@@ -1,22 +1,37 @@
 package TripFinderAlgorithm;
 
-public class POIInterval extends TimelineInterval implements Cloneable {
+public class POIInterval implements Cloneable {
 	private POI containedPOI;	
+	private int startsAt;
+	private int endsAt;
 	private POIInterval nextPOIInterval;
 	private POIInterval previousPOIInterval;
-	private TravelInterval nextTravelInterval;
-	private WaitInterval waitInterval;
+	private int arrivalTime;
+	private int wait;
 	private int maxShift;
 
-	// FIX:
-	// you do not need to input endingTime as a parameter, you can just add startingTime and duration
-	public POIInterval(POI containedPOI, int startingTime, int endingTime) {
-		super(startingTime, endingTime);
+	public POIInterval(POI containedPOI, int startingTime) {
 		this.containedPOI = containedPOI;
+		this.startsAt = startingTime;
+		this.endsAt = this.startsAt + this.containedPOI.getDuration();
 	}
 
 	public POI getPOI() {
 		return this.containedPOI;
+	}
+
+	public int getStartingTime() {
+		return this.startsAt;
+	}
+
+	public int getEndingTime() {
+		return this.endsAt;
+	}
+
+	// shifting time could be negative also
+	public void updateStartingAndEndingTime(int shiftingTime) {
+		this.startsAt += shiftingTime;
+		this.endsAt += shiftingTime;
 	}
 
 	public POIInterval getPreviousPOIInterval() {
@@ -35,24 +50,26 @@ public class POIInterval extends TimelineInterval implements Cloneable {
 		this.nextPOIInterval = nextPOIInterval;
 	}
 
-	public TravelInterval getTravelInterval() {
-		return this.nextTravelInterval;
+	public int getArrivalTime() {
+		return this.arrivalTime;
 	}
 
-	public void setTravelInterval(int startingTime, int endingTime) {
-		// FIX: 
-		// fix that round thing
-		this.nextTravelInterval = new TravelInterval(startingTime, endingTime);
+	public void setArrivalTime(int arrivalTime) {
+		this.arrivalTime = arrivalTime;
 	}
 
-	public WaitInterval getWaitInterval() {
-		// FIX:
-		// edit here to use this instead of multi accessing objects
-		return this.waitInterval;
+	public int getWaitTime() {
+		return this.wait;
 	}
 
-	public void setWaitInterval(WaitInterval waitInterval) {
-		this.waitInterval = waitInterval;
+	public void setWaitTime(int wait) {
+		this.wait = wait;
+	}
+
+	// FIX:
+	// make it possible to update wait time as soon as you update arrival time
+	public void updateWaitTime() {
+		this.wait = this.startsAt - this.arrivalTime;
 	}
 
 	public int getMaxShift() {
@@ -63,18 +80,19 @@ public class POIInterval extends TimelineInterval implements Cloneable {
 		this.maxShift = maxShift;
 	}
 
+	// FIX:
+	// this method is used for the POIs before insertion place (or removal place)
+	// I just used setMaxShift for POIs after insertion place
+	// make it more clear
 	public void updateMaxShift() {
-		int newMaxShiftParameter1 = this.getPOI().getClosingTime() - this.getStartingTime();
-		int newMaxShiftParameter2 = this.getNextPOIInterval().getWaitTime() + this.getNextPOIInterval().getMaxShift();
+		int newMaxShiftParameter1 = this.containedPOI.getClosingTime() - this.getStartingTime();
+		int newMaxShiftParameter2 = this.nextPOIInterval.getWaitTime() + this.nextPOIInterval.getMaxShift();
 		int newMaxShift = newMaxShiftParameter1 < newMaxShiftParameter2? newMaxShiftParameter1: newMaxShiftParameter2;
 		this.maxShift = newMaxShift;
 	}
 
-	public int getWaitTime() {
-		if(this.waitInterval == null) {
-			return 0;
-		}
-		return this.waitInterval.getDuration();
+	public int getTravelTime() {
+		return this.nextPOIInterval.getArrivalTime() - this.endsAt;
 	}
 
 	@Override
@@ -82,20 +100,6 @@ public class POIInterval extends TimelineInterval implements Cloneable {
 		POIInterval clonedPOIInterval = (POIInterval)super.clone();
 		if(this.nextPOIInterval != null) {
 			clonedPOIInterval.setNextPOIInterval((POIInterval)this.nextPOIInterval.clone());
-			clonedPOIInterval.setTravelInterval(this.nextTravelInterval.getStartingTime(), 
-												this.nextTravelInterval.getEndingTime());
-		}		
-
-		if(this.getTravelInterval() != null) {
-			if(this.getTravelInterval().getNextWaitInterval() != null) {
-				clonedPOIInterval.getTravelInterval().setNextWaitInterval(
-							this.getTravelInterval().getNextWaitInterval().getStartingTime(), 
-							this.getTravelInterval().getNextWaitInterval().getEndingTime()
-				);
-				clonedPOIInterval.getTravelInterval().getNextWaitInterval().setNextPOIInterval(
-							clonedPOIInterval.getNextPOIInterval()
-				);
-			}
 		}
 		
 		return clonedPOIInterval;
