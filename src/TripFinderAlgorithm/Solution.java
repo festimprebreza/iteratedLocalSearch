@@ -87,22 +87,23 @@ public class Solution implements Cloneable {
 					continue;
 				}
 
-				float highestRatioForThisPOI = -1;
 				POIInterval POIIntervalAfterBestInsertPositionForThisPOI = null;
 
 				POIInterval POIIntervalAfterInsertPosition = startingPOIIntervals[tour].getNextPOIInterval();
-				int bestShiftForThisPOI = -1;
+				int bestShiftForThisPOI = Integer.MAX_VALUE;
 				while(POIIntervalAfterInsertPosition != null) {
 					int shiftForNewPOI = getShift(currentPOI, POIIntervalAfterInsertPosition);
 					if(canInsertBeforeThisPOI(currentPOI, POIIntervalAfterInsertPosition, shiftForNewPOI)) {
-						float ratio = (float)Math.pow(currentPOI.getScore() / 100.0f, 2) / (shiftForNewPOI / 100.0f);
-						if(Float.compare(ratio, highestRatioForThisPOI) > 0) {
-							highestRatioForThisPOI = ratio;
-							POIIntervalAfterBestInsertPositionForThisPOI = POIIntervalAfterInsertPosition;
+						if(shiftForNewPOI < bestShiftForThisPOI) {
 							bestShiftForThisPOI = shiftForNewPOI;
+							POIIntervalAfterBestInsertPositionForThisPOI = POIIntervalAfterInsertPosition;
 						}
 					}
 					POIIntervalAfterInsertPosition = POIIntervalAfterInsertPosition.getNextPOIInterval();
+				}
+				float highestRatioForThisPOI = -1;
+				if(bestShiftForThisPOI != Integer.MAX_VALUE) {
+					highestRatioForThisPOI = (float)Math.pow(currentPOI.getScore() / 100.0f, 2) / (bestShiftForThisPOI / 100.0f);
 				}
 
 				if(Float.compare(highestRatioForThisPOI, highestRatio) > 0) {
