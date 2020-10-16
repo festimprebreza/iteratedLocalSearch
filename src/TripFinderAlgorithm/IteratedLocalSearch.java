@@ -14,7 +14,7 @@ public class IteratedLocalSearch {
 	public void solve() {
 		Solution currentSolution = new Solution(problemInput);
 		bestSolution = (Solution)currentSolution.clone();
-
+		
 		int removeNConsecutiveVisitsLimit = (int)(problemInput.getVisitablePOICount() / (3 * problemInput.getTourCount()));
 		int numberOfTimesWithNoImprovement = 0;
 		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {

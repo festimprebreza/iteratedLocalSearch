@@ -60,31 +60,56 @@ public class Solution implements Cloneable {
 	// make this function same as shakeStep
 	// insertPOI() does not have to do all the shifting and stuff
 	public void insertStep() {
+		float highestRatio = -1;
+		POI bestPOIToBeInserted = null;
+		POIInterval POIIntervalAfterBestInsertPosition = null;
+		int tourToInsertIn = -1;
+		int shiftForBestPOI = -1;
+
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			for(POI currentPOI: problemInput.getVisitablePOIs()) {
 				if(currentPOI.isAssigned()) {
 					continue;
 				}
 
+				float highestRatioForThisPOI = -1;
+				POIInterval POIIntervalAfterBestInsertPositionForThisPOI = null;
+
 				POIInterval POIIntervalAfterInsertPosition = startingPOIIntervals[tour].getNextPOIInterval();
-
-				while(POIIntervalAfterInsertPosition != null) { // so basically until the end of day
+				int bestShiftForThisPOI = -1;
+				// so basically check if it can be inserted before each POI until the end of the day
+				while(POIIntervalAfterInsertPosition != null) {
 					int shiftForNewPOI = getShift(currentPOI, POIIntervalAfterInsertPosition);
-					if(canInsertBeforeThisPOI(shiftForNewPOI, POIIntervalAfterInsertPosition)) {
-						POIInterval newPOIInterval = insertPOI(currentPOI, POIIntervalAfterInsertPosition);
-						calculateArriveStartAndWaitForNewPOI(newPOIInterval);
-						updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), shiftForNewPOI);
-						updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);
-
-						this.score += currentPOI.getScore();
-						this.stuckInLocalOptimum = false;
-						this.tourSizes[tour] += 1;
-						return;
+					if(canInsertBeforeThisPOI(currentPOI, POIIntervalAfterInsertPosition, shiftForNewPOI)) {
+						float ratio = (float)Math.pow(currentPOI.getScore() / 100.0f, 2) / (shiftForNewPOI / 100.0f);
+						if(Float.compare(ratio, highestRatioForThisPOI) > 0) {
+							highestRatioForThisPOI = ratio;
+							POIIntervalAfterBestInsertPositionForThisPOI = POIIntervalAfterInsertPosition;
+							bestShiftForThisPOI = shiftForNewPOI;
+						}
 					}
-
 					POIIntervalAfterInsertPosition = POIIntervalAfterInsertPosition.getNextPOIInterval();
 				}
+
+				if(Float.compare(highestRatioForThisPOI, highestRatio) > 0) {
+					highestRatio = highestRatioForThisPOI;
+					bestPOIToBeInserted = currentPOI;
+					POIIntervalAfterBestInsertPosition = POIIntervalAfterBestInsertPositionForThisPOI;
+					tourToInsertIn = tour;
+					shiftForBestPOI = bestShiftForThisPOI;
+				}
 			}
+		}
+
+		if(Float.compare(highestRatio, -1) != 0) {
+			POIInterval newPOIInterval = insertPOI(bestPOIToBeInserted, POIIntervalAfterBestInsertPosition);
+			calculateArriveStartAndWaitForNewPOI(newPOIInterval);
+			updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), shiftForBestPOI);
+			updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);
+			this.score += bestPOIToBeInserted.getScore();
+			this.stuckInLocalOptimum = false;
+			this.tourSizes[tourToInsertIn] += 1;
+			return;
 		}
 
 		this.stuckInLocalOptimum = true;
@@ -107,10 +132,21 @@ public class Solution implements Cloneable {
 		return shiftOfNewPOI;
 	}
 
-	public boolean canInsertBeforeThisPOI(int shiftForNewPOI, POIInterval POIIntervalAfterTheInsertPosition) {
-		// FIX:
-		// maybe other checks are needed here too
+	public boolean canInsertBeforeThisPOI(POI POIToBeInserted, POIInterval POIIntervalAfterTheInsertPosition, int shiftForNewPOI) {
 		if(shiftForNewPOI > POIIntervalAfterTheInsertPosition.getWaitTime() + POIIntervalAfterTheInsertPosition.getMaxShift()) {
+			return false;
+		}
+
+		// FIX:
+		// you can probably do this in a better way
+		int arrivalTime = POIIntervalAfterTheInsertPosition.getPreviousPOIInterval().getEndingTime() +
+				POIIntervalAfterTheInsertPosition.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(POIToBeInserted.getID());
+
+		int startingTime = arrivalTime;
+		if(POIToBeInserted.getOpeningTime() > startingTime) {
+			startingTime = POIToBeInserted.getOpeningTime();
+		}
+		if(startingTime > POIToBeInserted.getClosingTime()) {
 			return false;
 		}
 
