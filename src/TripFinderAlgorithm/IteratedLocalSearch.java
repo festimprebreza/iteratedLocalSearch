@@ -22,8 +22,8 @@ public class IteratedLocalSearch {
 				currentSolution.insertStep();
 			}
 
-			System.out.println("INSERTION STEP; Number of times no improvement: " + numberOfTimesWithNoImprovement);
-			System.out.println(currentSolution);
+			// System.out.println("INSERTION STEP; Number of times no improvement: " + numberOfTimesWithNoImprovement);
+			// System.out.println(currentSolution);
 
 			if(currentSolution.getScore() > bestSolution.getScore()) {
 				bestSolution = (Solution)currentSolution.clone();
@@ -34,8 +34,8 @@ public class IteratedLocalSearch {
 				numberOfTimesWithNoImprovement++;
 			}
 			currentSolution.shakeStep(startRemoveAt, removeNConsecutiveVisits);
-			System.out.println("SHAKE STEP; Number of times no improvement: " + numberOfTimesWithNoImprovement);
-			System.out.println(currentSolution);
+			// System.out.println("SHAKE STEP; Number of times no improvement: " + numberOfTimesWithNoImprovement);
+			// System.out.println(currentSolution);
 			startRemoveAt += removeNConsecutiveVisits;
 			removeNConsecutiveVisits++;
 

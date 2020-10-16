@@ -61,8 +61,6 @@ public class ProblemInput {
 		long insideSquareRoot = (long)(Math.pow(fromPOI.getXCoordinate() - toPOI.getXCoordinate(), 2) + 
 								Math.pow(fromPOI.getYCoordinate() - toPOI.getYCoordinate(), 2));
 		double squareRoot = Math.sqrt((double)insideSquareRoot);
-		// FIX:
-		// check that /10 here
 		return (int)Math.round(squareRoot / 10);
 	}
 
@@ -88,7 +86,6 @@ public class ProblemInput {
 			else if(lineCounter == 1) {
 				String secondLine = scanner.nextLine();
 				startingPOI = parsePOIFromLine(secondLine);
-				// FIX: do something smarter
 				endingPOI = parsePOIFromLine(secondLine);
 			}
 			else {
@@ -99,9 +96,6 @@ public class ProblemInput {
 			lineCounter++;
 		}
 		scanner.close();
-
-		// FIX:
-		// add here for each POI the distances to other POIs
 
 		return new ProblemInput(tourCount, visitablePOICount, startingPOI, endingPOI, visitablePOIs);
 	}

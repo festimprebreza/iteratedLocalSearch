@@ -1,13 +1,13 @@
 package TripFinderAlgorithm;
 
+import java.util.ArrayList;
+
 public class Solution implements Cloneable {
 	private POIInterval[] startingPOIIntervals;
 	private POIInterval[] endingPOIIntervals;
 	private ProblemInput problemInput;
 	private int score;
 	private boolean stuckInLocalOptimum;
-	// FIX:
-	// idea: add an array that holds sizes of all tours; then you just find the minimum of that array
 	private int[] tourSizes;
 
 	public Solution(ProblemInput problemInput) {
@@ -35,14 +35,6 @@ public class Solution implements Cloneable {
 		tourSizes = new int[problemInput.getTourCount()];
 	}
 
-	public void setStartingPOIInterval(POIInterval startingPOIInterval[]) {
-		this.startingPOIIntervals = startingPOIInterval;
-	}
-
-	public void setEndingPOIInterval(POIInterval endingPOIInterval[]) {
-		this.endingPOIIntervals = endingPOIInterval;
-	}
-
 	public int getScore() {
 		return this.score;
 	}
@@ -51,20 +43,43 @@ public class Solution implements Cloneable {
 		this.score = score;
 	}
 
-
 	public boolean notStuckInLocalOptimum() {
 		return !this.stuckInLocalOptimum;
 	}
 
-	// FIX:
-	// make this function same as shakeStep
-	// insertPOI() does not have to do all the shifting and stuff
 	public void insertStep() {
+		ArrayList<Object> bestInsertInfo = getInfoForBestPOIToInsert();
+
+		if(bestInsertInfo != null) {
+			POI bestPOIToBeInserted = (POI)bestInsertInfo.get(0);
+			POIInterval POIIntervalAfterBestInsertPosition = (POIInterval)bestInsertInfo.get(1);
+			int tourToInsertIn = (int)bestInsertInfo.get(2);
+			int shiftOfBestPOI = (int)bestInsertInfo.get(3);
+
+			POIInterval newPOIInterval = insertPOI(bestPOIToBeInserted, POIIntervalAfterBestInsertPosition);
+			calculateArriveStartAndWaitForNewPOI(newPOIInterval);
+			updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), shiftOfBestPOI);
+			updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);
+			this.score += bestPOIToBeInserted.getScore();
+			this.stuckInLocalOptimum = false;
+			this.tourSizes[tourToInsertIn] += 1;
+			return;
+		}
+
+		this.stuckInLocalOptimum = true;
+	}
+
+	public ArrayList<Object> getInfoForBestPOIToInsert() {
+		ArrayList<Object> insertInfo = new ArrayList<>();
 		float highestRatio = -1;
 		POI bestPOIToBeInserted = null;
 		POIInterval POIIntervalAfterBestInsertPosition = null;
 		int tourToInsertIn = -1;
-		int shiftForBestPOI = -1;
+		int shiftOfBestPOI = -1;
+		insertInfo.add(bestPOIToBeInserted);
+		insertInfo.add(POIIntervalAfterBestInsertPosition);
+		insertInfo.add(tourToInsertIn);
+		insertInfo.add(shiftOfBestPOI);
 
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			for(POI currentPOI: problemInput.getVisitablePOIs()) {
@@ -77,7 +92,6 @@ public class Solution implements Cloneable {
 
 				POIInterval POIIntervalAfterInsertPosition = startingPOIIntervals[tour].getNextPOIInterval();
 				int bestShiftForThisPOI = -1;
-				// so basically check if it can be inserted before each POI until the end of the day
 				while(POIIntervalAfterInsertPosition != null) {
 					int shiftForNewPOI = getShift(currentPOI, POIIntervalAfterInsertPosition);
 					if(canInsertBeforeThisPOI(currentPOI, POIIntervalAfterInsertPosition, shiftForNewPOI)) {
@@ -93,26 +107,18 @@ public class Solution implements Cloneable {
 
 				if(Float.compare(highestRatioForThisPOI, highestRatio) > 0) {
 					highestRatio = highestRatioForThisPOI;
-					bestPOIToBeInserted = currentPOI;
-					POIIntervalAfterBestInsertPosition = POIIntervalAfterBestInsertPositionForThisPOI;
-					tourToInsertIn = tour;
-					shiftForBestPOI = bestShiftForThisPOI;
+					insertInfo.set(0, currentPOI);
+					insertInfo.set(1, POIIntervalAfterBestInsertPositionForThisPOI);
+					insertInfo.set(2, tour);
+					insertInfo.set(3, bestShiftForThisPOI);
 				}
 			}
 		}
 
 		if(Float.compare(highestRatio, -1) != 0) {
-			POIInterval newPOIInterval = insertPOI(bestPOIToBeInserted, POIIntervalAfterBestInsertPosition);
-			calculateArriveStartAndWaitForNewPOI(newPOIInterval);
-			updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), shiftForBestPOI);
-			updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);
-			this.score += bestPOIToBeInserted.getScore();
-			this.stuckInLocalOptimum = false;
-			this.tourSizes[tourToInsertIn] += 1;
-			return;
+			return insertInfo;
 		}
-
-		this.stuckInLocalOptimum = true;
+		return null;
 	}
 
 	public int getShift(POI POIToBeInserted, POIInterval POIIntervalAfterInsertPosition) {
@@ -137,11 +143,8 @@ public class Solution implements Cloneable {
 			return false;
 		}
 
-		// FIX:
-		// you can probably do this in a better way
 		int arrivalTime = POIIntervalAfterTheInsertPosition.getPreviousPOIInterval().getEndingTime() +
 				POIIntervalAfterTheInsertPosition.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(POIToBeInserted.getID());
-
 		int startingTime = arrivalTime;
 		if(POIToBeInserted.getOpeningTime() > startingTime) {
 			startingTime = POIToBeInserted.getOpeningTime();
@@ -199,12 +202,10 @@ public class Solution implements Cloneable {
 			}
 
 			currentPOIInterval.updateStartingAndEndingTime(lastShift);
-			currentPOIInterval.setMaxShift(currentPOIInterval.getMaxShift() - lastShift);
+			currentPOIInterval.updateMaxShift(-lastShift);
 
 			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 		}
-		// FIX:
-		// check if we need special case for the last POI
 	}
 
 	public void updateMaxShiftForPreviousVisitsAndThis(POIInterval thisPOIInterval) {
@@ -224,13 +225,12 @@ public class Solution implements Cloneable {
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			int currentDayRemovals = 0;
 
-			POIInterval currentPOIInterval = getPOIIntervalWhereRemovingStartsFrom(startRemoveAt, tour);
+			POIInterval currentPOIInterval = getNthPOIIntervalInTourX(startRemoveAt, tour);
 			POIInterval POIIntervalAfterRemovingEnds = null;
 
 			while(currentDayRemovals < removeNConsecutiveVisits && this.tourSizes[tour] != 0) {
 				this.score -= currentPOIInterval.getPOI().getScore();
 				currentPOIInterval = removePOIInterval(currentPOIInterval);
-				// if we reach the end of the tour, we go from the beginning
 				if(currentPOIInterval == endingPOIIntervals[tour]) {
 					currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
 				}
@@ -245,10 +245,10 @@ public class Solution implements Cloneable {
 		}
 	}
 
-	public POIInterval getPOIIntervalWhereRemovingStartsFrom(int startRemoveAt, int tour) {
+	public POIInterval getNthPOIIntervalInTourX(int N, int tour) {
 		int currentPOIPosition = 0;
 		POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
-		while(currentPOIPosition != startRemoveAt) {
+		while(currentPOIPosition != N) {
 			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 			currentPOIPosition++;
 		}
@@ -267,10 +267,9 @@ public class Solution implements Cloneable {
 		return POIIntervalAfterRemovePosition;
 	}
 
-	public void updateParametersForFollowingVisitsAfterRemoval(POIInterval currentPOIInterval, POIInterval endingPOIInterval) {
+	public void updateParametersForFollowingVisitsAfterRemoval(POIInterval POIIntervalFollowingLastRemove, POIInterval endingPOIInterval) {
+		POIInterval currentPOIInterval = POIIntervalFollowingLastRemove;
 		while(currentPOIInterval != endingPOIInterval) {
-			// FIX: 
-			// check how you can implement the insert formulas here, for the shake step
 			int arrivalTime = currentPOIInterval.getPreviousPOIInterval().getEndingTime() + 
 							currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID());
 			currentPOIInterval.setArrivalTime(arrivalTime);
@@ -285,7 +284,7 @@ public class Solution implements Cloneable {
 			}
 			currentPOIInterval.updateStartingAndEndingTime(-shiftTime);
 			currentPOIInterval.updateWaitTime();
-			currentPOIInterval.setMaxShift(currentPOIInterval.getMaxShift() + shiftTime);
+			currentPOIInterval.updateMaxShift(shiftTime);
 			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 		}
 		int arrivalTime = endingPOIInterval.getPreviousPOIInterval().getEndingTime() + 
@@ -311,19 +310,16 @@ public class Solution implements Cloneable {
 			String resultPart1 = "";
 			String resultPart2 = "";
 			POIInterval currentPOIInterval = this.startingPOIIntervals[tour];
-			resultPart1 += currentPOIInterval.getPOI().getID();
-			resultPart1 += " -> ";
-			resultPart2 += "\r\n|" + (currentPOIInterval.getStartingTime() / 100.0f) + "____" + currentPOIInterval.getPOI().getID() + 
-						"____" + (currentPOIInterval.getEndingTime() / 100.0f) + "|";
-			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 			while(currentPOIInterval != null) {	
 				resultPart1 += currentPOIInterval.getPOI().getID();
 				if(currentPOIInterval.getNextPOIInterval() != null) {
 					resultPart1 += " -> ";
 				}
-				resultPart2 += "----->" + (currentPOIInterval.getArrivalTime() / 100.0f);
-				if(currentPOIInterval.getWaitTime() != 0) {
-					resultPart2 += ".....";
+				if(currentPOIInterval.getArrivalTime() != 0) {
+					resultPart2 += "----->" + (currentPOIInterval.getArrivalTime() / 100.0f);
+					if(currentPOIInterval.getWaitTime() != 0) {
+						resultPart2 += ".....";
+					}
 				}
 				resultPart2 += "\r\n|" + (currentPOIInterval.getStartingTime() / 100.0f) + "____" + currentPOIInterval.getPOI().getID() + 
 						"____" + (currentPOIInterval.getEndingTime() / 100.0f) + "|";
@@ -335,6 +331,14 @@ public class Solution implements Cloneable {
 		}
 		result += "================================================================================";
 		return result;
+	}
+
+	public void setStartingPOIInterval(POIInterval startingPOIInterval[]) {
+		this.startingPOIIntervals = startingPOIInterval;
+	}
+
+	public void setEndingPOIInterval(POIInterval endingPOIInterval[]) {
+		this.endingPOIIntervals = endingPOIInterval;
 	}
 
 	@Override

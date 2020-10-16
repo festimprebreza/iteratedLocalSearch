@@ -66,8 +66,6 @@ public class POIInterval implements Cloneable {
 		this.wait = wait;
 	}
 
-	// FIX:
-	// make it possible to update wait time as soon as you update arrival time
 	public void updateWaitTime() {
 		this.wait = this.startsAt - this.arrivalTime;
 	}
@@ -76,14 +74,10 @@ public class POIInterval implements Cloneable {
 		return maxShift;
 	}
 
-	public void setMaxShift(int maxShift) {
-		this.maxShift = maxShift;
+	public void updateMaxShift(int shift) {
+		this.maxShift += shift;
 	}
-
-	// FIX:
-	// this method is used for the POIs before insertion place (or removal place)
-	// I just used setMaxShift for POIs after insertion place
-	// make it more clear
+	
 	public void updateMaxShift() {
 		int newMaxShiftParameter1 = this.containedPOI.getClosingTime() - this.getStartingTime();
 		int newMaxShiftParameter2 = this.nextPOIInterval.getWaitTime() + this.nextPOIInterval.getMaxShift();
