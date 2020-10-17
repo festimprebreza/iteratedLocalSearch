@@ -306,30 +306,40 @@ public class Solution implements Cloneable {
 
 	@Override
 	public String toString() {
-		String result = "Score: " + (this.score / 100.0f) + "\r\n";
+		String result = "";
+		int visits = 0;
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			String resultPart1 = "";
 			String resultPart2 = "";
 			POIInterval currentPOIInterval = this.startingPOIIntervals[tour];
 			while(currentPOIInterval != null) {	
+				visits++;
 				resultPart1 += currentPOIInterval.getPOI().getID();
 				if(currentPOIInterval.getNextPOIInterval() != null) {
 					resultPart1 += " -> ";
 				}
 				if(currentPOIInterval.getArrivalTime() != 0) {
-					resultPart2 += "----->" + (currentPOIInterval.getArrivalTime() / 100.0f);
+					resultPart2 += "----->" + String.format("%7s", (currentPOIInterval.getArrivalTime() / 100.0f));
 					if(currentPOIInterval.getWaitTime() != 0) {
 						resultPart2 += ".....";
 					}
+					resultPart2 += "\t\t" + ((currentPOIInterval.getPreviousPOIInterval().getEndingTime() + currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID())) / 100.0f) + "\t\t" +
+								(currentPOIInterval.getPreviousPOIInterval().getMaxShift() / 100.0f) + "\t\t" + 
+								((currentPOIInterval.getPreviousPOIInterval().getPOI().getClosingTime() - currentPOIInterval.getPreviousPOIInterval().getStartingTime()) / 100.0f) + 
+								"\t\t" + ((currentPOIInterval.getWaitTime() + currentPOIInterval.getMaxShift()) / 100.0f);
 				}
-				resultPart2 += "\r\n|" + (currentPOIInterval.getStartingTime() / 100.0f) + "____" + currentPOIInterval.getPOI().getID() + 
-						"____" + (currentPOIInterval.getEndingTime() / 100.0f) + "|";
+				resultPart2 += "\r\n|" + 
+								String.format("%7s", (currentPOIInterval.getStartingTime() / 100.0f)) + 
+								"____" + String.format("%3s", currentPOIInterval.getPOI().getID()) + 
+								"____" + String.format("%7s", (currentPOIInterval.getEndingTime() / 100.0f)) + "|";
 	
 				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 			}
+			resultPart2 += "\t\t\t\t" + (endingPOIIntervals[tour].getMaxShift()/ 100.0f) + "\t\t" + (endingPOIIntervals[tour].getPOI().getID());
 			result += resultPart1 + resultPart2;
 			result += "\r\n\r\n";
 		}
+		result += "Score: " + (this.score / 100.0f) + "; Visits: " + (visits - 2 * problemInput.getTourCount()) + "\r\n";
 		result += "================================================================================";
 		return result;
 	}

@@ -34,7 +34,7 @@ public class IteratedLocalSearch {
 				numberOfTimesWithNoImprovement++;
 			}
 			currentSolution.shakeStep(startRemoveAt, removeNConsecutiveVisits);
-			// System.out.println("SHAKE STEP; Number of times no improvement: " + numberOfTimesWithNoImprovement);
+			// System.out.println("SHAKE STEP; Sd parameter: " + startRemoveAt + "; Rd parameter: " + removeNConsecutiveVisitsLimit);
 			// System.out.println(currentSolution);
 			startRemoveAt += removeNConsecutiveVisits;
 			removeNConsecutiveVisits++;

@@ -94,6 +94,7 @@ public class POIInterval implements Cloneable {
 		POIInterval clonedPOIInterval = (POIInterval)super.clone();
 		if(this.nextPOIInterval != null) {
 			clonedPOIInterval.setNextPOIInterval((POIInterval)this.nextPOIInterval.clone());
+			clonedPOIInterval.getNextPOIInterval().setPreviousPOIInterval(clonedPOIInterval);
 		}
 		
 		return clonedPOIInterval;
