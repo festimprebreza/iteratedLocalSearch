@@ -28,8 +28,7 @@ public class POIInterval implements Cloneable {
 		return this.endsAt;
 	}
 
-	// shifting time could be negative also
-	public void updateStartingAndEndingTime(int shiftingTime) {
+	public void shiftStartingAndEndingTime(int shiftingTime) {
 		this.startsAt += shiftingTime;
 		this.endsAt += shiftingTime;
 	}
@@ -79,10 +78,8 @@ public class POIInterval implements Cloneable {
 	}
 	
 	public void updateMaxShift() {
-		int newMaxShiftParameter1 = this.containedPOI.getClosingTime() - this.getStartingTime();
-		int newMaxShiftParameter2 = this.nextPOIInterval.getWaitTime() + this.nextPOIInterval.getMaxShift();
-		int newMaxShift = newMaxShiftParameter1 < newMaxShiftParameter2? newMaxShiftParameter1: newMaxShiftParameter2;
-		this.maxShift = newMaxShift;
+		this.maxShift = MathExtension.getMinOfTwo(this.containedPOI.getClosingTime() - this.getStartingTime(), 
+												this.nextPOIInterval.getWaitTime() + this.nextPOIInterval.getMaxShift());
 	}
 
 	public int getTravelTime() {

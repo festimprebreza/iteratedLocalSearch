@@ -15,9 +15,10 @@ public class TripGenerator {
 			System.exit(1);
 		}
 
-		IteratedLocalSearch ILSAlgorithm = new IteratedLocalSearch(problemInput);
-		ILSAlgorithm.solve();
+		IteratedLocalSearch ILSAlgorithm = new IteratedLocalSearch();
+		ILSAlgorithm.solve(problemInput);
 		Solution bestSolution = ILSAlgorithm.getBestSolution();
+		System.out.println("BEST SOLUTION: ");
 		System.out.println(bestSolution);
 	}
 }

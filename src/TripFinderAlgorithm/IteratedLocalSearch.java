@@ -4,14 +4,9 @@ public class IteratedLocalSearch {
 	private final int MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT = 150;
 	private int startRemoveAt = 0;
 	private int removeNConsecutiveVisits = 1;
-	private ProblemInput problemInput;
 	private Solution bestSolution;
 
-	public IteratedLocalSearch(ProblemInput problemInput) {
-		this.problemInput = problemInput;
-	}
-
-	public void solve() {
+	public void solve(ProblemInput problemInput) {
 		Solution currentSolution = new Solution(problemInput);
 		bestSolution = (Solution)currentSolution.clone();
 		
@@ -20,6 +15,9 @@ public class IteratedLocalSearch {
 		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
 			while(currentSolution.notStuckInLocalOptimum()) {
 				currentSolution.insertStep();
+				if(!currentSolution.isValid()) {
+					System.exit(1);
+				}
 			}
 
 			// System.out.println("INSERTION STEP; Number of times no improvement: " + numberOfTimesWithNoImprovement);
@@ -34,20 +32,17 @@ public class IteratedLocalSearch {
 				numberOfTimesWithNoImprovement++;
 			}
 			currentSolution.shakeStep(startRemoveAt, removeNConsecutiveVisits);
-			// System.out.println("SHAKE STEP; Sd parameter: " + startRemoveAt + "; Rd parameter: " + removeNConsecutiveVisitsLimit);
+			if(!currentSolution.isValid()) {
+				System.exit(1);
+			}
+			// System.out.println("SHAKE STEP; Sd parameter: " + startRemoveAt + "; Rd parameter: " + removeNConsecutiveVisits);
 			// System.out.println(currentSolution);
 			startRemoveAt += removeNConsecutiveVisits;
 			removeNConsecutiveVisits++;
 
-			if(startRemoveAt > currentSolution.sizeOfSmallestTour()) {
-				if(currentSolution.sizeOfSmallestTour() == 0) {
-					startRemoveAt = 0;
-				}
-				else {
-					startRemoveAt %= currentSolution.sizeOfSmallestTour();
-				}
+			if(startRemoveAt >= currentSolution.sizeOfSmallestTour()) {
+				startRemoveAt -= currentSolution.sizeOfSmallestTour();
 			}
-
 			if(removeNConsecutiveVisits == removeNConsecutiveVisitsLimit) {
 				removeNConsecutiveVisits = 1;
 			}

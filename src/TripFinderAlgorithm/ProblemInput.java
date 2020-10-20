@@ -11,17 +11,19 @@ public class ProblemInput {
 	private POI startingPOI;
 	private POI endingPOI;
 	private POI[] visitablePOIs;
+	private boolean solomon;
 
 	private ProblemInput() {
 
 	}
 
-	private ProblemInput(int tourCount, int visitablePOICount, POI startingPOI, POI endingPOI, POI[] visitablePOIs) { 
+	private ProblemInput(int tourCount, int visitablePOICount, POI startingPOI, POI endingPOI, POI[] visitablePOIs, boolean solomon) { 
 		this.tourCount = tourCount;
 		this.visitablePOICount = visitablePOICount;
 		this.startingPOI = startingPOI;
 		this.endingPOI = endingPOI;
 		this.visitablePOIs = visitablePOIs;
+		this.solomon = solomon;
 
 		assignTravelDistances();
 	}
@@ -58,10 +60,13 @@ public class ProblemInput {
 	}
 
 	public int getDistance(POI fromPOI, POI toPOI) {
-		long insideSquareRoot = (long)(Math.pow(fromPOI.getXCoordinate() - toPOI.getXCoordinate(), 2) + 
-								Math.pow(fromPOI.getYCoordinate() - toPOI.getYCoordinate(), 2));
-		double squareRoot = Math.sqrt((double)insideSquareRoot);
-		return (int)Math.round(squareRoot / 10);
+		double euclidianDistance = MathExtension.getEuclidianDistanceOfTwoPOIs(fromPOI, toPOI);
+		if(solomon) {
+			return ((int)(euclidianDistance / 100)) * 10;
+		}
+		else {
+			return (int)(euclidianDistance / 10);
+		}
 	}
 
 	public static ProblemInput getProblemInputFromFile(String filePath) throws FileNotFoundException {
@@ -97,7 +102,9 @@ public class ProblemInput {
 		}
 		scanner.close();
 
-		return new ProblemInput(tourCount, visitablePOICount, startingPOI, endingPOI, visitablePOIs);
+		boolean solomon = filePath.contains("Solomon");
+
+		return new ProblemInput(tourCount, visitablePOICount, startingPOI, endingPOI, visitablePOIs, solomon);
 	}
 	
 	public static POI parsePOIFromLine(String line) {

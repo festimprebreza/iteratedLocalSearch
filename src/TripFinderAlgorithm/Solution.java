@@ -9,6 +9,7 @@ public class Solution implements Cloneable {
 	private int score;
 	private boolean stuckInLocalOptimum;
 	private int[] tourSizes;
+	private int sizeOfSmallestTour = Integer.MAX_VALUE;
 
 	public Solution(ProblemInput problemInput) {
 		this.problemInput = problemInput;
@@ -24,11 +25,8 @@ public class Solution implements Cloneable {
 			this.startingPOIIntervals[tour].setNextPOIInterval(this.endingPOIIntervals[tour]);
 			this.endingPOIIntervals[tour].setPreviousPOIInterval(this.startingPOIIntervals[tour]);
 
-			// set arrival time for ending
 			this.endingPOIIntervals[tour].setArrivalTime(this.startingPOIIntervals[tour].getPOI().getTravelTimeToPOI(
-														this.endingPOIIntervals[tour].getPOI().getID()
-														));
-			// set wait time for ending
+																			this.endingPOIIntervals[tour].getPOI().getID()));
 			this.endingPOIIntervals[tour].updateWaitTime();
 		}
 
@@ -39,8 +37,12 @@ public class Solution implements Cloneable {
 		return this.score;
 	}
 
-	public void setScore(int score) {
-		this.score = score;
+	public int getVisits() {
+		int totalVisits = 0;
+		for(int tour = 0; tour < tourSizes.length; tour++) {
+			totalVisits += tourSizes[tour];
+		}
+		return totalVisits;
 	}
 
 	public boolean notStuckInLocalOptimum() {
@@ -90,20 +92,20 @@ public class Solution implements Cloneable {
 				POIInterval POIIntervalAfterBestInsertPositionForThisPOI = null;
 
 				POIInterval POIIntervalAfterInsertPosition = startingPOIIntervals[tour].getNextPOIInterval();
-				int bestShiftForThisPOI = Integer.MAX_VALUE;
+				int lowestShiftForThisPOI = Integer.MAX_VALUE;
 				while(POIIntervalAfterInsertPosition != null) {
 					int shiftForNewPOI = getShift(currentPOI, POIIntervalAfterInsertPosition);
 					if(canInsertBeforeThisPOI(currentPOI, POIIntervalAfterInsertPosition, shiftForNewPOI)) {
-						if(shiftForNewPOI < bestShiftForThisPOI) {
-							bestShiftForThisPOI = shiftForNewPOI;
+						if(shiftForNewPOI < lowestShiftForThisPOI) {
+							lowestShiftForThisPOI = shiftForNewPOI;
 							POIIntervalAfterBestInsertPositionForThisPOI = POIIntervalAfterInsertPosition;
 						}
 					}
 					POIIntervalAfterInsertPosition = POIIntervalAfterInsertPosition.getNextPOIInterval();
 				}
 				float highestRatioForThisPOI = -1;
-				if(bestShiftForThisPOI != Integer.MAX_VALUE) {
-					highestRatioForThisPOI = (float)Math.pow(currentPOI.getScore() / 100.0f, 2) / (bestShiftForThisPOI / 100.0f);
+				if(lowestShiftForThisPOI != Integer.MAX_VALUE) {
+					highestRatioForThisPOI = (float)Math.pow(currentPOI.getScore() / 100.0f, 2) / (lowestShiftForThisPOI / 100.0f);
 				}
 
 				if(Float.compare(highestRatioForThisPOI, highestRatio) > 0) {
@@ -111,7 +113,7 @@ public class Solution implements Cloneable {
 					insertInfo.set(0, currentPOI);
 					insertInfo.set(1, POIIntervalAfterBestInsertPositionForThisPOI);
 					insertInfo.set(2, tour);
-					insertInfo.set(3, bestShiftForThisPOI);
+					insertInfo.set(3, lowestShiftForThisPOI);
 				}
 			}
 		}
@@ -130,8 +132,7 @@ public class Solution implements Cloneable {
 		int currentTravelTime = POIIntervalBeforeInsertPosition.getTravelTime();
 
 		int arrivalTimeForNewPOI = POIIntervalBeforeInsertPosition.getEndingTime() + travelTimeToNewPOI;
-		int waitComponent = POIToBeInserted.getOpeningTime() - arrivalTimeForNewPOI;
-		int waitOfNewPOI = waitComponent > 0? waitComponent: 0;
+		int waitOfNewPOI = MathExtension.getMaxOfTwo(POIToBeInserted.getOpeningTime() - arrivalTimeForNewPOI, 0);
 
 		int shiftOfNewPOI = travelTimeToNewPOI + waitOfNewPOI + POIToBeInserted.getDuration() + travelTimeFromNewPOIToNext - 
 								currentTravelTime;
@@ -139,17 +140,15 @@ public class Solution implements Cloneable {
 		return shiftOfNewPOI;
 	}
 
-	public boolean canInsertBeforeThisPOI(POI POIToBeInserted, POIInterval POIIntervalAfterTheInsertPosition, int shiftForNewPOI) {
-		if(shiftForNewPOI > POIIntervalAfterTheInsertPosition.getWaitTime() + POIIntervalAfterTheInsertPosition.getMaxShift()) {
+	public boolean canInsertBeforeThisPOI(POI POIToBeInserted, POIInterval POIIntervalAfterInsertPosition, int shiftForNewPOI) {
+		if(shiftForNewPOI > POIIntervalAfterInsertPosition.getWaitTime() + POIIntervalAfterInsertPosition.getMaxShift()) {
 			return false;
 		}
+		
+		POIInterval POIIntervalBeforeInsertPosition = POIIntervalAfterInsertPosition.getPreviousPOIInterval();
+		int arrivalTime = calculateArrivalTime(POIIntervalBeforeInsertPosition, POIToBeInserted.getID());
 
-		int arrivalTime = POIIntervalAfterTheInsertPosition.getPreviousPOIInterval().getEndingTime() +
-				POIIntervalAfterTheInsertPosition.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(POIToBeInserted.getID());
-		int startingTime = arrivalTime;
-		if(POIToBeInserted.getOpeningTime() > startingTime) {
-			startingTime = POIToBeInserted.getOpeningTime();
-		}
+		int startingTime = MathExtension.getMaxOfTwo(arrivalTime, POIToBeInserted.getOpeningTime());
 		if(startingTime > POIToBeInserted.getClosingTime()) {
 			return false;
 		}
@@ -158,7 +157,7 @@ public class Solution implements Cloneable {
 	}
 
 	public POIInterval insertPOI(POI POIToBeInserted, POIInterval POIIntervalAfterInsertPosition) {
-		POIToBeInserted.setAssigned();
+		POIToBeInserted.setAssigned(true);
 		
 		POIInterval POIIntervalBeforeInsertPosition = POIIntervalAfterInsertPosition.getPreviousPOIInterval();
 
@@ -173,16 +172,13 @@ public class Solution implements Cloneable {
 	}
 
 	public void calculateArriveStartAndWaitForNewPOI(POIInterval newPOIInterval) {
-		int arrivalTime = newPOIInterval.getPreviousPOIInterval().getEndingTime() +
-						newPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(newPOIInterval.getPOI().getID());
-		
-		int startingTime = arrivalTime;
-		if(newPOIInterval.getPOI().getOpeningTime() > startingTime) {
-			startingTime = newPOIInterval.getPOI().getOpeningTime();
-		}
-		
+		POIInterval previousPOIInterval = newPOIInterval.getPreviousPOIInterval();
+		int arrivalTime = calculateArrivalTime(previousPOIInterval, newPOIInterval.getPOI().getID());
 		newPOIInterval.setArrivalTime(arrivalTime);
-		newPOIInterval.updateStartingAndEndingTime(startingTime);
+		
+		int startingTime = MathExtension.getMaxOfTwo(arrivalTime, newPOIInterval.getPOI().getOpeningTime());
+		
+		newPOIInterval.shiftStartingAndEndingTime(startingTime);
 		newPOIInterval.updateWaitTime();
 	}
 
@@ -190,22 +186,21 @@ public class Solution implements Cloneable {
 		POIInterval currentPOIInterval = POIIntervalFollowingInsert;
 		int lastShift = shiftForNewPOI;
 		while(true) {
-			int newWaitParameter = currentPOIInterval.getWaitTime() - lastShift;
-			int newWaitForCurrentPOIInterval = newWaitParameter > 0? newWaitParameter: 0;
-			currentPOIInterval.setWaitTime(newWaitForCurrentPOIInterval);
+			int updateParameter = currentPOIInterval.getWaitTime() - lastShift;			
+			currentPOIInterval.setWaitTime(MathExtension.getMaxOfTwo(0, updateParameter));
 
 			currentPOIInterval.setArrivalTime(currentPOIInterval.getArrivalTime() + lastShift);
 
-			int newLastShiftParameter = newWaitParameter * (-1);
-			lastShift = newLastShiftParameter > 0? newLastShiftParameter: 0;
-			if(lastShift == 0) {
+			int currentShift = MathExtension.getMaxOfTwo(0, updateParameter * -1);
+			if(currentShift == 0) {
 				break;
 			}
 
-			currentPOIInterval.updateStartingAndEndingTime(lastShift);
-			currentPOIInterval.updateMaxShift(-lastShift);
+			currentPOIInterval.shiftStartingAndEndingTime(currentShift);
+			currentPOIInterval.updateMaxShift(-currentShift);
 
 			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+			lastShift = currentShift;
 		}
 	}
 
@@ -213,26 +208,24 @@ public class Solution implements Cloneable {
 		POIInterval currentPOIInterval = thisPOIInterval;
 		while(currentPOIInterval.getPOI().getDuration() > 0) {
 			currentPOIInterval.updateMaxShift();
-			if(currentPOIInterval.getMaxShift() == 0) {
-				break;
-			}
 			currentPOIInterval = currentPOIInterval.getPreviousPOIInterval();
 		}
 	}
 
 	public void shakeStep(int startRemoveAt, int removeNConsecutiveVisits) {
 		this.stuckInLocalOptimum = false;
+		this.updateSizeOfSmallestTour();
 
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			int currentDayRemovals = 0;
 
-			POIInterval currentPOIInterval = getNthPOIIntervalInTourX(startRemoveAt, tour);
+			POIInterval currentPOIInterval = getNthPOIIntervalInTourX(startRemoveAt % tourSizes[tour], tour);
 			POIInterval POIIntervalAfterRemovingEnds = null;
 
 			while(currentDayRemovals < removeNConsecutiveVisits && this.tourSizes[tour] != 0) {
 				this.score -= currentPOIInterval.getPOI().getScore();
 				currentPOIInterval = removePOIInterval(currentPOIInterval);
-				if(currentPOIInterval == endingPOIIntervals[tour]) {
+				if(currentPOIInterval == endingPOIIntervals[tour] && currentDayRemovals != removeNConsecutiveVisits - 1) {
 					currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
 				}
 				this.tourSizes[tour] -= 1;
@@ -241,67 +234,130 @@ public class Solution implements Cloneable {
 			
 			POIIntervalAfterRemovingEnds = currentPOIInterval;
 			
-			updateParametersForFollowingVisitsAfterRemoval(currentPOIInterval, endingPOIIntervals[tour]);
-			updateMaxShiftForPreviousVisitsAndThis(POIIntervalAfterRemovingEnds.getPreviousPOIInterval());
+			updateParametersForFollowingVisitsAfterRemoval(POIIntervalAfterRemovingEnds, endingPOIIntervals[tour]);
+			updateMaxShiftForPreviousVisitsAndThis(endingPOIIntervals[tour].getPreviousPOIInterval());
 		}
 	}
 
-	public POIInterval getNthPOIIntervalInTourX(int N, int tour) {
-		int currentPOIPosition = 0;
-		POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
-		while(currentPOIPosition != N) {
-			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
-			currentPOIPosition++;
-		}
-		return currentPOIInterval;
-	}
-
-	public POIInterval removePOIInterval(POIInterval currentPOIInterval) {
-		currentPOIInterval.getPOI().unassign();
-
-		POIInterval POIIntervalBeforeRemovePosition = currentPOIInterval.getPreviousPOIInterval();
-		POIInterval POIIntervalAfterRemovePosition = currentPOIInterval.getNextPOIInterval();
-		
-		POIIntervalBeforeRemovePosition.setNextPOIInterval(currentPOIInterval.getNextPOIInterval());
-		POIIntervalAfterRemovePosition.setPreviousPOIInterval(currentPOIInterval.getPreviousPOIInterval());
-
-		return POIIntervalAfterRemovePosition;
-	}
-
-	public void updateParametersForFollowingVisitsAfterRemoval(POIInterval POIIntervalFollowingLastRemove, POIInterval endingPOIInterval) {
-		POIInterval currentPOIInterval = POIIntervalFollowingLastRemove;
-		while(currentPOIInterval != endingPOIInterval) {
-			int arrivalTime = currentPOIInterval.getPreviousPOIInterval().getEndingTime() + 
-							currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID());
-			currentPOIInterval.setArrivalTime(arrivalTime);
-			int newStartingTime = currentPOIInterval.getArrivalTime();
-			if(currentPOIInterval.getPOI().getOpeningTime() > newStartingTime) {
-				newStartingTime = currentPOIInterval.getPOI().getOpeningTime();
-			}
-			int shiftTime = currentPOIInterval.getStartingTime() - newStartingTime;
-			if(shiftTime == 0) {
-				currentPOIInterval.updateWaitTime();
-				break;
-			}
-			currentPOIInterval.updateStartingAndEndingTime(-shiftTime);
-			currentPOIInterval.updateWaitTime();
-			currentPOIInterval.updateMaxShift(shiftTime);
-			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
-		}
-		int arrivalTime = endingPOIInterval.getPreviousPOIInterval().getEndingTime() + 
-						endingPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(endingPOIInterval.getPOI().getID());
-		endingPOIInterval.setArrivalTime(arrivalTime);
-		endingPOIInterval.updateWaitTime();
-	}
-
-	public int sizeOfSmallestTour() {
+	private void updateSizeOfSmallestTour() {
 		int sizeOfSmallestTour = tourSizes[0];
 		for(int tour = 1; tour < tourSizes.length; tour++) {
 			if(tourSizes[tour] < sizeOfSmallestTour) {
 				sizeOfSmallestTour = tourSizes[tour];
 			}
 		}
-		return sizeOfSmallestTour;
+		this.sizeOfSmallestTour = sizeOfSmallestTour;
+	}
+
+	public POIInterval getNthPOIIntervalInTourX(int N, int tour) {
+		int currentPOIPosition = 0;
+		POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+		while(currentPOIPosition < N) {
+			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+			if(currentPOIInterval == endingPOIIntervals[tour]) {
+				currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+			}
+			currentPOIPosition++;
+		}
+		return currentPOIInterval;
+	}
+
+	public POIInterval removePOIInterval(POIInterval currentPOIInterval) {
+		currentPOIInterval.getPOI().setAssigned(false);
+
+		POIInterval POIIntervalBeforeRemovePosition = currentPOIInterval.getPreviousPOIInterval();
+		POIInterval POIIntervalAfterRemovePosition = currentPOIInterval.getNextPOIInterval();
+		
+		POIIntervalBeforeRemovePosition.setNextPOIInterval(POIIntervalAfterRemovePosition);
+		POIIntervalAfterRemovePosition.setPreviousPOIInterval(POIIntervalBeforeRemovePosition);
+
+		return POIIntervalAfterRemovePosition;
+	}
+
+	public void updateParametersForFollowingVisitsAfterRemoval(POIInterval POIIntervalFollowingLastRemove, 
+																POIInterval endingPOIInterval) {
+		POIInterval currentPOIInterval = POIIntervalFollowingLastRemove;
+		while(currentPOIInterval != endingPOIInterval) {
+			int arrivalTime = calculateArrivalTime(currentPOIInterval.getPreviousPOIInterval(), currentPOIInterval.getPOI().getID());
+			currentPOIInterval.setArrivalTime(arrivalTime);
+
+			int newStartingTime = MathExtension.getMaxOfTwo(arrivalTime, currentPOIInterval.getPOI().getOpeningTime());
+			int shiftTime = currentPOIInterval.getStartingTime() - newStartingTime;
+			currentPOIInterval.shiftStartingAndEndingTime(-shiftTime);
+
+			currentPOIInterval.updateWaitTime();
+			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+		}
+		int arrivalTime = calculateArrivalTime(endingPOIInterval.getPreviousPOIInterval(), endingPOIInterval.getPOI().getID());
+		endingPOIInterval.setArrivalTime(arrivalTime);
+		endingPOIInterval.updateWaitTime();
+	}
+
+	public int sizeOfSmallestTour() {
+		return this.sizeOfSmallestTour;
+	}
+
+	public static int calculateArrivalTime(POIInterval previousPOIInterval, int currentPOIID) {
+		return previousPOIInterval.getEndingTime() + previousPOIInterval.getPOI().getTravelTimeToPOI(currentPOIID);
+	}
+
+	// delete in the end
+	public boolean isValid() {
+		// opening and closing
+		int score = 0;
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			POIInterval currentPOIInterval = startingPOIIntervals[tour];
+			while(currentPOIInterval != endingPOIIntervals[tour]) {
+				if(currentPOIInterval.getStartingTime() < currentPOIInterval.getPOI().getOpeningTime()) {
+					return false;
+				}
+				if(currentPOIInterval.getStartingTime() > currentPOIInterval.getPOI().getClosingTime()) {
+					return false;
+				}
+				score += currentPOIInterval.getPOI().getScore();
+				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+			}
+		}
+		// score
+		if(score != this.getScore()) {
+			return false;
+		}
+		// travel
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+			while(currentPOIInterval != null) {
+				int currentTravelTime = currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID());
+				if(currentPOIInterval.getArrivalTime() - currentPOIInterval.getPreviousPOIInterval().getEndingTime() != currentTravelTime) {
+					return false;
+				}
+				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+			}
+		}
+		// maxshift
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			POIInterval currentPOIInterval = endingPOIIntervals[tour].getPreviousPOIInterval();
+			while(currentPOIInterval != startingPOIIntervals[tour]) {
+				int currentMaxShift1 = currentPOIInterval.getPOI().getClosingTime() - currentPOIInterval.getStartingTime();
+				int currentMaxShift2 = currentPOIInterval.getNextPOIInterval().getWaitTime() + currentPOIInterval.getNextPOIInterval().getMaxShift();
+				int currentMaxShift = MathExtension.getMinOfTwo(currentMaxShift1, currentMaxShift2);
+				if(currentMaxShift != currentPOIInterval.getMaxShift()) {
+					return false;
+				}
+				currentPOIInterval = currentPOIInterval.getPreviousPOIInterval();
+			}
+		}
+		// wait
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+			while(currentPOIInterval != null) {
+				int currentWaitTime = currentPOIInterval.getStartingTime() - currentPOIInterval.getArrivalTime();
+				if(currentWaitTime != currentPOIInterval.getWaitTime()) {
+					return false;
+				}
+				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+			}
+		}
+		return true;
 	}
 
 	@Override
@@ -309,6 +365,7 @@ public class Solution implements Cloneable {
 		String result = "";
 		int visits = 0;
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			result += "\t\t\t\t\t\t\tArrT\tMaxSh\tMaxSh\tMaxSh1\tMaxSh2\tNxtMxSh\tWait\n";
 			String resultPart1 = "";
 			String resultPart2 = "";
 			POIInterval currentPOIInterval = this.startingPOIIntervals[tour];
@@ -323,10 +380,19 @@ public class Solution implements Cloneable {
 					if(currentPOIInterval.getWaitTime() != 0) {
 						resultPart2 += ".....";
 					}
-					resultPart2 += "\t\t" + ((currentPOIInterval.getPreviousPOIInterval().getEndingTime() + currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID())) / 100.0f) + "\t\t" +
-								(currentPOIInterval.getPreviousPOIInterval().getMaxShift() / 100.0f) + "\t\t" + 
-								((currentPOIInterval.getPreviousPOIInterval().getPOI().getClosingTime() - currentPOIInterval.getPreviousPOIInterval().getStartingTime()) / 100.0f) + 
-								"\t\t" + ((currentPOIInterval.getWaitTime() + currentPOIInterval.getMaxShift()) / 100.0f);
+					if(currentPOIInterval.getPreviousPOIInterval().getArrivalTime() != 0) {
+						int expectedArrivalTime = currentPOIInterval.getPreviousPOIInterval().getEndingTime() + currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID());
+						String resultComponent1 = expectedArrivalTime == currentPOIInterval.getArrivalTime()? "true": "FALSEE!";
+						int lastMaxShift = currentPOIInterval.getPreviousPOIInterval().getMaxShift();
+						int lastMaxShift1 = currentPOIInterval.getPreviousPOIInterval().getPOI().getClosingTime() - currentPOIInterval.getPreviousPOIInterval().getStartingTime();
+						int lastMaxShift2 = currentPOIInterval.getWaitTime() + currentPOIInterval.getMaxShift();
+						String resultComponent2 = (lastMaxShift == lastMaxShift1 || lastMaxShift == lastMaxShift2)? "true": "FALSEE!";
+						int maxShift = currentPOIInterval.getMaxShift();
+						int wait = currentPOIInterval.getWaitTime();
+						resultPart2 += "\t\t" + resultComponent1 + "\t" +
+									resultComponent2 + "\t" + (lastMaxShift / 100.0f) + "\t" + (lastMaxShift1 / 100.0f) + "\t" 
+									+ (lastMaxShift2 / 100.0f) + "\t" + (maxShift / 100.0f) + "\t" + (wait / 100.0f);
+					}
 				}
 				resultPart2 += "\r\n|" + 
 								String.format("%7s", (currentPOIInterval.getStartingTime() / 100.0f)) + 
@@ -335,7 +401,6 @@ public class Solution implements Cloneable {
 	
 				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 			}
-			resultPart2 += "\t\t\t\t" + (endingPOIIntervals[tour].getMaxShift()/ 100.0f) + "\t\t" + (endingPOIIntervals[tour].getPOI().getID());
 			result += resultPart1 + resultPart2;
 			result += "\r\n\r\n";
 		}
@@ -379,6 +444,11 @@ public class Solution implements Cloneable {
 
 		clonedSolution.setStartingPOIInterval(clonedStartingPOIIntervals);
 		clonedSolution.setEndingPOIInterval(clonedEndingPOIIntervals);
+
+		clonedSolution.tourSizes = new int[tourSizes.length];
+		for(int i = 0; i < tourSizes.length; i++) {
+			clonedSolution.tourSizes[i] = tourSizes[i];
+		}
 
 		return clonedSolution;
 	}

@@ -57,12 +57,8 @@ public class POI implements Cloneable {
 		return this.isAssigned;
 	}
 
-	public void setAssigned() {
-		this.isAssigned = true;
-	}
-
-	public void unassign() {
-		this.isAssigned = false;
+	public void setAssigned(boolean isAssigned) {
+		this.isAssigned = isAssigned;
 	}
 
 	public void setTravelDistances(HashMap<Integer, Integer> travelDistances) {
