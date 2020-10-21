@@ -11,19 +11,24 @@ public class ProblemInput {
 	private POI startingPOI;
 	private POI endingPOI;
 	private POI[] visitablePOIs;
+	private int budgetLimit;
+	private int[] maxAllowedVisitsForEachType;
 	private boolean solomon;
 
 	private ProblemInput() {
 
 	}
 
-	private ProblemInput(int tourCount, int visitablePOICount, POI startingPOI, POI endingPOI, POI[] visitablePOIs, boolean solomon) { 
+	private ProblemInput(int tourCount, int visitablePOICount, POI startingPOI, POI endingPOI, POI[] visitablePOIs, 
+						int budgetLimit, int[] maxAllowedVisitsForEachType, boolean solomon) { 
 		this.tourCount = tourCount;
 		this.visitablePOICount = visitablePOICount;
 		this.startingPOI = startingPOI;
 		this.endingPOI = endingPOI;
 		this.visitablePOIs = visitablePOIs;
 		this.solomon = solomon;
+		this.budgetLimit = budgetLimit;
+		this.maxAllowedVisitsForEachType = maxAllowedVisitsForEachType;
 
 		assignTravelDistances();
 	}
@@ -76,7 +81,8 @@ public class ProblemInput {
 		POI startingPOI = null;
 		POI endingPOI = null;
 		POI[] visitablePOIs = null;
-
+		int budgetLimit = 0;
+		int[] maxAllowedVisitsForEachType = null;
 		
 		int lineCounter = 0;
 		int visitablePOICounter = 0;
@@ -87,11 +93,20 @@ public class ProblemInput {
 				tourCount = Integer.parseInt(firstLineComponents[0]);
 				visitablePOICount = Integer.parseInt(firstLineComponents[1]);
 				visitablePOIs = new POI[visitablePOICount];
+				budgetLimit = Math.round(Float.parseFloat(firstLineComponents[2]) * 100);
 			}
 			else if(lineCounter == 1) {
 				String secondLine = scanner.nextLine();
-				startingPOI = parsePOIFromLine(secondLine);
-				endingPOI = parsePOIFromLine(secondLine);
+				String[] secondLineComponents = secondLine.split(" ");
+				maxAllowedVisitsForEachType = new int[secondLineComponents.length];
+				for(int type = 0; type < secondLineComponents.length; type++) {
+					maxAllowedVisitsForEachType[type] = Integer.parseInt(secondLineComponents[type]);
+				}
+			}
+			else if(lineCounter == 2) {
+				String thirdLine = scanner.nextLine();
+				startingPOI = parsePOIFromLine(thirdLine);
+				endingPOI = parsePOIFromLine(thirdLine);
 			}
 			else {
 				String currentLine = scanner.nextLine();
@@ -104,7 +119,8 @@ public class ProblemInput {
 
 		boolean solomon = filePath.contains("Solomon");
 
-		return new ProblemInput(tourCount, visitablePOICount, startingPOI, endingPOI, visitablePOIs, solomon);
+		return new ProblemInput(tourCount, visitablePOICount, startingPOI, endingPOI, visitablePOIs, 
+								budgetLimit, maxAllowedVisitsForEachType, solomon);
 	}
 	
 	public static POI parsePOIFromLine(String line) {
@@ -116,8 +132,23 @@ public class ProblemInput {
 		int score = Math.round(Float.parseFloat(lineComponents[4]) * 100);
 		int openingTime = Math.round(Float.parseFloat(lineComponents[5]) * 100);
 		int closingTime = Math.round(Float.parseFloat(lineComponents[6]) * 100);
+		int entranceFee = 0;
+		boolean[] typeBitArray = {};
 
-		return new POI(ID, xCoordinate, yCoordinate, duration, score, openingTime, closingTime);
+		if(lineComponents.length > 7) {
+			entranceFee = Math.round(Float.parseFloat(lineComponents[7]) * 100);
+			typeBitArray = new boolean[lineComponents.length - 7];
+			for(int component = 8; component < lineComponents.length; component++) {
+				if(lineComponents[component].equals("1")) {
+					typeBitArray[component - 8] = true;
+				}
+				else {
+					typeBitArray[component - 8] = false;
+				}
+			}
+		}
+
+		return new POI(ID, xCoordinate, yCoordinate, duration, score, openingTime, closingTime, entranceFee, typeBitArray);
 	}
 
 	public int getTourCount() {
@@ -138,5 +169,17 @@ public class ProblemInput {
 
 	public POI[] getVisitablePOIs() {
 		return this.visitablePOIs;
+	}
+
+	public int getBudgetLimit() {
+		return this.budgetLimit;
+	}
+
+	public int[] getMaxAllowedVisitsForEachType() {
+		return this.maxAllowedVisitsForEachType;
+	}
+
+	public int getMaxAllowedVisitsForType(int type) {
+		return this.maxAllowedVisitsForEachType[type];
 	}
 }
