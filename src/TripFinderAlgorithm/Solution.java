@@ -8,6 +8,8 @@ public class Solution implements Cloneable {
 	private ProblemInput problemInput;
 	private int score;
 	private boolean stuckInLocalOptimum;
+	private int totalMoneySpent;
+	private int[] visitCountOfEachType;
 	private int[] tourSizes;
 	private int sizeOfSmallestTour = Integer.MAX_VALUE;
 
@@ -19,8 +21,8 @@ public class Solution implements Cloneable {
 		endingPOIIntervals = new POIInterval[problemInput.getTourCount()];
 
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
-			this.startingPOIIntervals[tour] = new POIInterval(startingPOI, startingPOI.getOpeningTime());
-			this.endingPOIIntervals[tour] = new POIInterval(endingPOI, endingPOI.getClosingTime());
+			this.startingPOIIntervals[tour] = new POIInterval(startingPOI, startingPOI.getOpeningTime(), -1);
+			this.endingPOIIntervals[tour] = new POIInterval(endingPOI, endingPOI.getClosingTime(), -1);
 	
 			this.startingPOIIntervals[tour].setNextPOIInterval(this.endingPOIIntervals[tour]);
 			this.endingPOIIntervals[tour].setPreviousPOIInterval(this.startingPOIIntervals[tour]);
@@ -31,6 +33,8 @@ public class Solution implements Cloneable {
 		}
 
 		tourSizes = new int[problemInput.getTourCount()];
+		totalMoneySpent = 0;
+		visitCountOfEachType = new int[problemInput.getMaxAllowedVisitsForEachType().length];
 	}
 
 	public int getScore() {
@@ -57,12 +61,15 @@ public class Solution implements Cloneable {
 			POIInterval POIIntervalAfterBestInsertPosition = (POIInterval)bestInsertInfo.get(1);
 			int tourToInsertIn = (int)bestInsertInfo.get(2);
 			int shiftOfBestPOI = (int)bestInsertInfo.get(3);
+			int assignedTypeOfBestPOI = (int)bestInsertInfo.get(4);
 
-			POIInterval newPOIInterval = insertPOI(bestPOIToBeInserted, POIIntervalAfterBestInsertPosition);
+			POIInterval newPOIInterval = insertPOI(bestPOIToBeInserted, POIIntervalAfterBestInsertPosition, assignedTypeOfBestPOI);
 			calculateArriveStartAndWaitForNewPOI(newPOIInterval);
 			updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), shiftOfBestPOI);
 			updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);
 			this.score += bestPOIToBeInserted.getScore();
+			this.totalMoneySpent += bestPOIToBeInserted.getEntranceFee();
+			this.visitCountOfEachType[assignedTypeOfBestPOI] += 1;
 			this.stuckInLocalOptimum = false;
 			this.tourSizes[tourToInsertIn] += 1;
 			return;
@@ -78,10 +85,12 @@ public class Solution implements Cloneable {
 		POIInterval POIIntervalAfterBestInsertPosition = null;
 		int tourToInsertIn = -1;
 		int shiftOfBestPOI = -1;
+		int assignedTypeOfBestPOI = -1;
 		insertInfo.add(bestPOIToBeInserted);
 		insertInfo.add(POIIntervalAfterBestInsertPosition);
 		insertInfo.add(tourToInsertIn);
 		insertInfo.add(shiftOfBestPOI);
+		insertInfo.add(assignedTypeOfBestPOI);
 
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			for(POI currentPOI: problemInput.getVisitablePOIs()) {
@@ -93,12 +102,16 @@ public class Solution implements Cloneable {
 
 				POIInterval POIIntervalAfterInsertPosition = startingPOIIntervals[tour].getNextPOIInterval();
 				int lowestShiftForThisPOI = Integer.MAX_VALUE;
+				int assignedType = -1;
 				while(POIIntervalAfterInsertPosition != null) {
-					int shiftForNewPOI = getShift(currentPOI, POIIntervalAfterInsertPosition);
-					if(canInsertBeforeThisPOI(currentPOI, POIIntervalAfterInsertPosition, shiftForNewPOI)) {
-						if(shiftForNewPOI < lowestShiftForThisPOI) {
-							lowestShiftForThisPOI = shiftForNewPOI;
-							POIIntervalAfterBestInsertPositionForThisPOI = POIIntervalAfterInsertPosition;
+					for(int type: currentPOI.getTypes()) {
+						int shiftForNewPOI = getShift(currentPOI, POIIntervalAfterInsertPosition);
+						if(canInsertBeforeThisPOI(currentPOI, POIIntervalAfterInsertPosition, shiftForNewPOI, type)) {
+							if(shiftForNewPOI < lowestShiftForThisPOI) {
+								lowestShiftForThisPOI = shiftForNewPOI;
+								POIIntervalAfterBestInsertPositionForThisPOI = POIIntervalAfterInsertPosition;
+								assignedType = type;
+							}
 						}
 					}
 					POIIntervalAfterInsertPosition = POIIntervalAfterInsertPosition.getNextPOIInterval();
@@ -114,6 +127,7 @@ public class Solution implements Cloneable {
 					insertInfo.set(1, POIIntervalAfterBestInsertPositionForThisPOI);
 					insertInfo.set(2, tour);
 					insertInfo.set(3, lowestShiftForThisPOI);
+					insertInfo.set(4, assignedType);
 				}
 			}
 		}
@@ -140,7 +154,16 @@ public class Solution implements Cloneable {
 		return shiftOfNewPOI;
 	}
 
-	public boolean canInsertBeforeThisPOI(POI POIToBeInserted, POIInterval POIIntervalAfterInsertPosition, int shiftForNewPOI) {
+	public boolean canInsertBeforeThisPOI(POI POIToBeInserted, POIInterval POIIntervalAfterInsertPosition, 
+											int shiftForNewPOI, int typeToAssign) {
+		if(this.totalMoneySpent + POIToBeInserted.getEntranceFee() > problemInput.getBudgetLimit()) {
+			return false;
+		}
+
+		if(this.visitCountOfEachType[typeToAssign] + 1 > problemInput.getMaxAllowedVisitsForType(typeToAssign)) {
+			return false;
+		}
+
 		if(shiftForNewPOI > POIIntervalAfterInsertPosition.getWaitTime() + POIIntervalAfterInsertPosition.getMaxShift()) {
 			return false;
 		}
@@ -156,12 +179,12 @@ public class Solution implements Cloneable {
 		return true;
 	}
 
-	public POIInterval insertPOI(POI POIToBeInserted, POIInterval POIIntervalAfterInsertPosition) {
+	public POIInterval insertPOI(POI POIToBeInserted, POIInterval POIIntervalAfterInsertPosition, int assignedTypeOfBestPOI) {
 		POIToBeInserted.setAssigned(true);
 		
 		POIInterval POIIntervalBeforeInsertPosition = POIIntervalAfterInsertPosition.getPreviousPOIInterval();
 
-		POIInterval newPOIInterval = new POIInterval(POIToBeInserted, 0);
+		POIInterval newPOIInterval = new POIInterval(POIToBeInserted, 0, assignedTypeOfBestPOI);
 
 		newPOIInterval.setPreviousPOIInterval(POIIntervalBeforeInsertPosition);
 		newPOIInterval.setNextPOIInterval(POIIntervalAfterInsertPosition);
@@ -224,11 +247,13 @@ public class Solution implements Cloneable {
 
 			while(currentDayRemovals < removeNConsecutiveVisits && this.tourSizes[tour] != 0) {
 				this.score -= currentPOIInterval.getPOI().getScore();
+				this.totalMoneySpent -= currentPOIInterval.getPOI().getEntranceFee();
+				this.visitCountOfEachType[currentPOIInterval.getAssignedType()] -= 1;
 				currentPOIInterval = removePOIInterval(currentPOIInterval);
 				if(currentPOIInterval == endingPOIIntervals[tour] && currentDayRemovals != removeNConsecutiveVisits - 1) {
 					currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
 				}
-				this.tourSizes[tour] -= 1;
+				this.tourSizes[tour] -= 1;				
 				currentDayRemovals++;
 			}
 			
@@ -305,6 +330,7 @@ public class Solution implements Cloneable {
 	public boolean isValid() {
 		// opening and closing
 		int score = 0;
+		int totalMoneySpent = 0;
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			POIInterval currentPOIInterval = startingPOIIntervals[tour];
 			while(currentPOIInterval != endingPOIIntervals[tour]) {
@@ -315,11 +341,16 @@ public class Solution implements Cloneable {
 					return false;
 				}
 				score += currentPOIInterval.getPOI().getScore();
+				totalMoneySpent += currentPOIInterval.getPOI().getEntranceFee();
 				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 			}
 		}
 		// score
 		if(score != this.getScore()) {
+			return false;
+		}
+		// budget
+		if(totalMoneySpent != this.totalMoneySpent || totalMoneySpent > problemInput.getBudgetLimit()) {
 			return false;
 		}
 		// travel
@@ -334,6 +365,7 @@ public class Solution implements Cloneable {
 			}
 		}
 		// maxshift
+		int[] visitCountOfEachType = new int[this.visitCountOfEachType.length];
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			POIInterval currentPOIInterval = endingPOIIntervals[tour].getPreviousPOIInterval();
 			while(currentPOIInterval != startingPOIIntervals[tour]) {
@@ -343,7 +375,14 @@ public class Solution implements Cloneable {
 				if(currentMaxShift != currentPOIInterval.getMaxShift()) {
 					return false;
 				}
+				visitCountOfEachType[currentPOIInterval.getAssignedType()] += 1;
 				currentPOIInterval = currentPOIInterval.getPreviousPOIInterval();
+			}
+		}
+		// max allowed visit of type
+		for(int type = 0; type < visitCountOfEachType.length; type++) {
+			if(visitCountOfEachType[type] > this.visitCountOfEachType[type]) {
+				return false;
 			}
 		}
 		// wait
@@ -405,7 +444,11 @@ public class Solution implements Cloneable {
 			result += "\r\n\r\n";
 		}
 		result += "Score: " + (this.score / 100.0f) + "; Visits: " + (visits - 2 * problemInput.getTourCount()) + "\r\n";
-		result += "================================================================================";
+		result += "Money spent: " + (this.totalMoneySpent / 100.0f) + "; Visits of each type: ";
+		for(int type = 0; type < this.visitCountOfEachType.length; type++) {
+			result += this.visitCountOfEachType[type] + " ";
+		}
+		result += "\r\n================================================================================";
 		return result;
 	}
 
@@ -446,8 +489,13 @@ public class Solution implements Cloneable {
 		clonedSolution.setEndingPOIInterval(clonedEndingPOIIntervals);
 
 		clonedSolution.tourSizes = new int[tourSizes.length];
-		for(int i = 0; i < tourSizes.length; i++) {
-			clonedSolution.tourSizes[i] = tourSizes[i];
+		for(int tour = 0; tour < tourSizes.length; tour++) {
+			clonedSolution.tourSizes[tour] = tourSizes[tour];
+		}
+
+		clonedSolution.visitCountOfEachType = new int[this.visitCountOfEachType.length];
+		for(int type = 0; type < this.visitCountOfEachType.length; type++) {
+			clonedSolution.visitCountOfEachType[type] = this.visitCountOfEachType[type];
 		}
 
 		return clonedSolution;

@@ -9,11 +9,13 @@ public class POIInterval implements Cloneable {
 	private int arrivalTime;
 	private int wait;
 	private int maxShift;
+	private int assignedType;
 
-	public POIInterval(POI containedPOI, int startingTime) {
+	public POIInterval(POI containedPOI, int startingTime, int assignedType) {
 		this.containedPOI = containedPOI;
 		this.startsAt = startingTime;
 		this.endsAt = this.startsAt + this.containedPOI.getDuration();
+		this.assignedType = assignedType;
 	}
 
 	public POI getPOI() {
@@ -84,6 +86,10 @@ public class POIInterval implements Cloneable {
 
 	public int getTravelTime() {
 		return this.nextPOIInterval.getArrivalTime() - this.endsAt;
+	}
+
+	public int getAssignedType() {
+		return assignedType;
 	}
 
 	@Override
