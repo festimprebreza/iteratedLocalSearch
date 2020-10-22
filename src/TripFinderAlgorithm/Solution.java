@@ -491,6 +491,10 @@ public class Solution implements Cloneable {
 		this.endingPOIIntervals = endingPOIInterval;
 	}
 
+	public int[] getTourSizes() {
+		return this.tourSizes;
+	}
+
 	@Override
 	public Object clone() {
 		Solution clonedSolution = null;

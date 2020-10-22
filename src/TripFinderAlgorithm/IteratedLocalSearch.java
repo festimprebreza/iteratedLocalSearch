@@ -1,12 +1,13 @@
 package TripFinderAlgorithm;
 
 public class IteratedLocalSearch {
-	private final int MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT = 150;
+	private final int FACTOR_NO_IMPROVEMENT = 10;
 	private int startRemoveAt = 0;
 	private int removeNConsecutiveVisits = 1;
 	private Solution bestSolution;
 
 	public void solve(ProblemInput problemInput) {
+		final int MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT = FACTOR_NO_IMPROVEMENT * getSizeOfFirstRoute(problemInput);
 		Solution currentSolution = new Solution(problemInput);
 		bestSolution = (Solution)currentSolution.clone();
 		
@@ -51,5 +52,23 @@ public class IteratedLocalSearch {
 
 	public Solution getBestSolution() {
 		return this.bestSolution;
+	}
+
+	public int getSizeOfFirstRoute(ProblemInput problemInput) {
+		Solution currentSolution = new Solution(problemInput);
+		while(currentSolution.notStuckInLocalOptimum()) {
+			currentSolution.insertStep();
+		}
+		// clear the assignment set
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			POIInterval currentPOIInterval = currentSolution.getNthPOIIntervalInTourX(0, tour);
+			while(currentPOIInterval != null) {
+				if(currentPOIInterval.getPOI().getDuration() > 0) {
+					currentPOIInterval.getPOI().setAssigned(false);
+				}
+				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+			}
+		}
+		return currentSolution.getTourSizes()[0];
 	}
 }
