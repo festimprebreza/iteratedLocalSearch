@@ -2,6 +2,7 @@ package TripFinderAlgorithm;
 
 public class IteratedLocalSearch {
 	private final int FACTOR_NO_IMPROVEMENT = 10;
+	private final int TABU_ITERATIONS = 2;
 	private int startRemoveAt = 0;
 	private int removeNConsecutiveVisits = 1;
 	private Solution bestSolution;
@@ -10,7 +11,7 @@ public class IteratedLocalSearch {
 		final int MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT = FACTOR_NO_IMPROVEMENT * getSizeOfFirstRoute(problemInput);
 		Solution currentSolution = new Solution(problemInput);
 		bestSolution = (Solution)currentSolution.clone();
-		
+
 		int removeNConsecutiveVisitsLimit = (int)(problemInput.getVisitablePOICount() / (3 * problemInput.getTourCount()));
 		int numberOfTimesWithNoImprovement = 0;
 		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
@@ -32,7 +33,7 @@ public class IteratedLocalSearch {
 			else {
 				numberOfTimesWithNoImprovement++;
 			}
-			currentSolution.shakeStep(startRemoveAt, removeNConsecutiveVisits);
+			currentSolution.shakeStep(startRemoveAt, removeNConsecutiveVisits, TABU_ITERATIONS);
 			if(!currentSolution.isValid()) {
 				System.exit(1);
 			}

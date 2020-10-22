@@ -111,6 +111,7 @@ public class ProblemInput {
 			else {
 				String currentLine = scanner.nextLine();
 				visitablePOIs[visitablePOICounter] = parsePOIFromLine(currentLine);
+				visitablePOIs[visitablePOICounter].createTabuInfo(tourCount);
 				visitablePOICounter++;
 			}
 			lineCounter++;

@@ -17,6 +17,7 @@ public class POI implements Cloneable {
 	private ArrayList<Integer> types;
 
 	private boolean isAssigned;
+	private int[] lastRemovedIteration;
 
 	public POI(int ID, long xCoordinate, long yCoordinate, int duration, int score, int openingTime, 
 				int closingTime, int entranceFee, boolean[] typeBitArray) {
@@ -95,6 +96,21 @@ public class POI implements Cloneable {
 			return 0;
 		}
 		return travelDistances.get(toPOIID);
+	}
+
+	public void createTabuInfo(int tourCount) {
+		lastRemovedIteration = new int[tourCount];
+		for(int tour = 0; tour < lastRemovedIteration.length; tour++) {
+			lastRemovedIteration[tour] = -3;
+		}
+	}
+
+	public int getLastRemovedIteration(int tour) {
+		return lastRemovedIteration[tour];
+	}
+
+	public void updateLastRemovedIteration(int currentIteration, int tour) {
+		this.lastRemovedIteration[tour] = currentIteration;
 	}
 
 	@Override

@@ -13,6 +13,7 @@ public class Solution implements Cloneable {
 	private int[] tourSizes;
 	private int sizeOfSmallestTour = Integer.MAX_VALUE;
 	private int[] availableTime;
+	private int currentIteration;
 
 	public Solution(ProblemInput problemInput) {
 		this.problemInput = problemInput;
@@ -41,6 +42,7 @@ public class Solution implements Cloneable {
 		tourSizes = new int[problemInput.getTourCount()];
 		totalMoneySpent = 0;
 		visitCountOfEachType = new int[problemInput.getMaxAllowedVisitsForEachType().length];
+		currentIteration  = -1;
 	}
 
 	public int getScore() {
@@ -262,17 +264,38 @@ public class Solution implements Cloneable {
 		}
 	}
 
-	public void shakeStep(int startRemoveAt, int removeNConsecutiveVisits) {
+	public void shakeStep(int startRemoveAt, int removeNConsecutiveVisits, int tabuIterations) {
 		this.stuckInLocalOptimum = false;
+		this.currentIteration += 1;
 		this.updateSizeOfSmallestTour();
 
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			int currentDayRemovals = 0;
 
 			POIInterval currentPOIInterval = getNthPOIIntervalInTourX(startRemoveAt % tourSizes[tour], tour);
-			POIInterval POIIntervalAfterRemovingEnds = null;
 
 			while(currentDayRemovals < removeNConsecutiveVisits && this.tourSizes[tour] != 0) {
+				int iterationsWithoutFindingRemovablePOI = 0;
+				// this.printTour(tour);
+				// System.out.println("Current iteration: " + this.currentIteration);
+				// System.out.println("Considering for removal: " + currentPOIInterval.getPOI().getID());
+				// System.out.println("Last removed in this tour: " + currentPOIInterval.getPOI().getLastRemovedIteration(tour));
+				while(!canRemovePOIInterval(currentPOIInterval, tabuIterations, tour)) {
+					if(iterationsWithoutFindingRemovablePOI == this.tourSizes[tour] - 1) {
+						break;
+					}
+					currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+					if(currentPOIInterval == endingPOIIntervals[tour]) {
+						currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+					}
+					// System.out.println("Considering for removal: " + currentPOIInterval.getPOI().getID());
+					// System.out.println("Last removed in this tour: " + currentPOIInterval.getPOI().getLastRemovedIteration(tour));
+					iterationsWithoutFindingRemovablePOI++;
+				}
+				// System.out.println("Selected for removal: " + currentPOIInterval.getPOI().getID());
+				// System.out.println("Last removed in this tour: " + currentPOIInterval.getPOI().getLastRemovedIteration(tour));
+				// System.out.println();
+
 				this.score -= currentPOIInterval.getPOI().getScore();
 				this.totalMoneySpent -= currentPOIInterval.getPOI().getEntranceFee();
 				this.visitCountOfEachType[currentPOIInterval.getAssignedType()] -= 1;
@@ -280,6 +303,7 @@ public class Solution implements Cloneable {
 										currentPOIInterval.getPOI().getTravelTimeToPOI(currentPOIInterval.getPreviousPOIInterval().getPOI().getID()) + 
 										currentPOIInterval.getPOI().getTravelTimeToPOI(currentPOIInterval.getNextPOIInterval().getPOI().getID()) -
 										currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getNextPOIInterval().getPOI().getID());
+				currentPOIInterval.getPOI().updateLastRemovedIteration(this.currentIteration, tour);
 				currentPOIInterval = removePOIInterval(currentPOIInterval);
 				if(currentPOIInterval == endingPOIIntervals[tour] && currentDayRemovals != removeNConsecutiveVisits - 1) {
 					currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
@@ -287,10 +311,13 @@ public class Solution implements Cloneable {
 				this.tourSizes[tour] -= 1;				
 				currentDayRemovals++;
 			}
+			// System.out.println();
+			// System.out.println();
+			// System.out.println();
+			// System.out.println();
+			// System.out.println();
 			
-			POIIntervalAfterRemovingEnds = currentPOIInterval;
-			
-			updateParametersForFollowingVisitsAfterRemoval(POIIntervalAfterRemovingEnds, endingPOIIntervals[tour]);
+			updateParametersForFollowingVisitsAfterRemoval(startingPOIIntervals[tour].getNextPOIInterval(), endingPOIIntervals[tour]);
 			updateMaxShiftForPreviousVisitsAndThis(endingPOIIntervals[tour].getPreviousPOIInterval());
 		}
 	}
@@ -316,6 +343,10 @@ public class Solution implements Cloneable {
 			currentPOIPosition++;
 		}
 		return currentPOIInterval;
+	}
+
+	public boolean canRemovePOIInterval(POIInterval POIIntervalToBeRemoved, int tabuIterations, int tour) {
+		return this.currentIteration - POIIntervalToBeRemoved.getPOI().getLastRemovedIteration(tour) > tabuIterations;
 	}
 
 	public POIInterval removePOIInterval(POIInterval currentPOIInterval) {
@@ -366,9 +397,11 @@ public class Solution implements Cloneable {
 			POIInterval currentPOIInterval = startingPOIIntervals[tour];
 			while(currentPOIInterval != endingPOIIntervals[tour]) {
 				if(currentPOIInterval.getStartingTime() < currentPOIInterval.getPOI().getOpeningTime()) {
+					System.out.println("Opening time violated!");
 					return false;
 				}
 				if(currentPOIInterval.getStartingTime() > currentPOIInterval.getPOI().getClosingTime()) {
+					System.out.println("Closing time violated!");
 					return false;
 				}
 				score += currentPOIInterval.getPOI().getScore();
@@ -378,10 +411,12 @@ public class Solution implements Cloneable {
 		}
 		// score
 		if(score != this.getScore()) {
+			System.out.println("Score does not match!");
 			return false;
 		}
 		// budget
 		if(totalMoneySpent != this.totalMoneySpent || totalMoneySpent > problemInput.getBudgetLimit()) {
+			System.out.println("Budget exceeded!");
 			return false;
 		}
 		// travel
@@ -390,6 +425,7 @@ public class Solution implements Cloneable {
 			while(currentPOIInterval != null) {
 				int currentTravelTime = currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID());
 				if(currentPOIInterval.getArrivalTime() - currentPOIInterval.getPreviousPOIInterval().getEndingTime() != currentTravelTime) {
+					System.out.println("Arrival time does not match!");
 					return false;
 				}
 				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
@@ -404,6 +440,7 @@ public class Solution implements Cloneable {
 				int currentMaxShift2 = currentPOIInterval.getNextPOIInterval().getWaitTime() + currentPOIInterval.getNextPOIInterval().getMaxShift();
 				int currentMaxShift = MathExtension.getMinOfTwo(currentMaxShift1, currentMaxShift2);
 				if(currentMaxShift != currentPOIInterval.getMaxShift()) {
+					System.out.println("Max shift does not match!");
 					return false;
 				}
 				visitCountOfEachType[currentPOIInterval.getAssignedType()] += 1;
@@ -413,6 +450,7 @@ public class Solution implements Cloneable {
 		// max allowed visit of type
 		for(int type = 0; type < visitCountOfEachType.length; type++) {
 			if(visitCountOfEachType[type] > this.visitCountOfEachType[type]) {
+				System.out.println("Max allowed visits of a type exceeded!");
 				return false;
 			}
 		}
@@ -422,6 +460,7 @@ public class Solution implements Cloneable {
 			while(currentPOIInterval != null) {
 				int currentWaitTime = currentPOIInterval.getStartingTime() - currentPOIInterval.getArrivalTime();
 				if(currentWaitTime != currentPOIInterval.getWaitTime()) {
+					System.out.println("Wait time violated!");
 					return false;
 				}
 				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
@@ -481,6 +520,15 @@ public class Solution implements Cloneable {
 		}
 		result += "\r\n================================================================================";
 		return result;
+	}
+
+	public void printTour(int tour) {
+		POIInterval currentPOIInterval = startingPOIIntervals[tour];
+		while(currentPOIInterval != endingPOIIntervals[tour]) {
+			System.out.printf("%d -> ", currentPOIInterval.getPOI().getID());
+			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+		}
+		System.out.println("0");
 	}
 
 	public void setStartingPOIInterval(POIInterval startingPOIInterval[]) {
