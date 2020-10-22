@@ -12,7 +12,7 @@ public class Solution implements Cloneable {
 	private int[] visitCountOfEachType;
 	private int[] tourSizes;
 	private int sizeOfSmallestTour = Integer.MAX_VALUE;
-	private int availableTime = 0;
+	private int[] availableTime;
 
 	public Solution(ProblemInput problemInput) {
 		this.problemInput = problemInput;
@@ -20,6 +20,10 @@ public class Solution implements Cloneable {
 		POI endingPOI = problemInput.getEndingPOI();
 		startingPOIIntervals = new POIInterval[problemInput.getTourCount()];
 		endingPOIIntervals = new POIInterval[problemInput.getTourCount()];
+		this.availableTime = new int[problemInput.getTourCount()];
+		for(int tour = 0; tour < this.availableTime.length; tour++) {
+			this.availableTime[tour] = 0;
+		}
 
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			this.startingPOIIntervals[tour] = new POIInterval(startingPOI, startingPOI.getOpeningTime(), -1);
@@ -31,7 +35,7 @@ public class Solution implements Cloneable {
 			this.endingPOIIntervals[tour].setArrivalTime(this.startingPOIIntervals[tour].getPOI().getTravelTimeToPOI(
 																			this.endingPOIIntervals[tour].getPOI().getID()));
 			this.endingPOIIntervals[tour].updateWaitTime();
-			this.availableTime += this.endingPOIIntervals[tour].getWaitTime();
+			this.availableTime[tour] += this.endingPOIIntervals[tour].getWaitTime();
 		}
 
 		tourSizes = new int[problemInput.getTourCount()];
@@ -74,7 +78,7 @@ public class Solution implements Cloneable {
 			this.visitCountOfEachType[assignedTypeOfBestPOI] += 1;
 			this.stuckInLocalOptimum = false;
 			this.tourSizes[tourToInsertIn] += 1;
-			this.availableTime -= (shiftOfBestPOI - newPOIInterval.getWaitTime());
+			this.availableTime[tourToInsertIn] -= (shiftOfBestPOI - newPOIInterval.getWaitTime());
 			return;
 		}
 
@@ -112,7 +116,8 @@ public class Solution implements Cloneable {
 						if(canInsertBecauseOfConstraints(currentPOI.getEntranceFee(), type)) {
 							int shiftForNewPOI = getShift(currentPOI, POIIntervalAfterInsertPosition);
 							if(canInsertBeforeThisPOI(currentPOI, POIIntervalAfterInsertPosition, shiftForNewPOI)) {
-								float denominatorForNewPOI = calculateDenominator(shiftForNewPOI, currentPOI.getEntranceFee(), type);
+								float denominatorForNewPOI = calculateDenominator(shiftForNewPOI, currentPOI.getEntranceFee(), 
+																					type, tour);
 								if(Float.compare(denominatorForNewPOI, bestDenominatorForNewPOI) < 0) {
 									bestDenominatorForNewPOI = denominatorForNewPOI;
 									shiftOnBestInsertForNewPOI = shiftForNewPOI;
@@ -190,11 +195,11 @@ public class Solution implements Cloneable {
 		return true;
 	}
 
-	public float calculateDenominator(int shiftForNewPOI, int entranceFee, int type) {
+	public float calculateDenominator(int shiftForNewPOI, int entranceFee, int type, int tour) {
 		int availableBudget = problemInput.getBudgetLimit() - this.totalMoneySpent;
 		int visitsOfTypeLeft = problemInput.getMaxAllowedVisitsForType(type) - this.visitCountOfEachType[type];
 
-		float firstComponent = shiftForNewPOI / (float)availableTime;
+		float firstComponent = shiftForNewPOI / (float)availableTime[tour];
 		float secondComponent = entranceFee / (float)availableBudget;
 		float thirdComponent = 1 / (float)visitsOfTypeLeft;
 		
@@ -271,7 +276,7 @@ public class Solution implements Cloneable {
 				this.score -= currentPOIInterval.getPOI().getScore();
 				this.totalMoneySpent -= currentPOIInterval.getPOI().getEntranceFee();
 				this.visitCountOfEachType[currentPOIInterval.getAssignedType()] -= 1;
-				this.availableTime += currentPOIInterval.getPOI().getDuration() + 
+				this.availableTime[tour] += currentPOIInterval.getPOI().getDuration() + 
 										currentPOIInterval.getPOI().getTravelTimeToPOI(currentPOIInterval.getPreviousPOIInterval().getPOI().getID()) + 
 										currentPOIInterval.getPOI().getTravelTimeToPOI(currentPOIInterval.getNextPOIInterval().getPOI().getID()) -
 										currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getNextPOIInterval().getPOI().getID());
