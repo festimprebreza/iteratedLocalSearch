@@ -11,8 +11,8 @@ public class ProblemInput {
 	private POI startingPOI;
 	private POI endingPOI;
 	private POI[] visitablePOIs;
-	private int budgetLimit;
-	private int[] maxAllowedVisitsForEachType;
+	private int E1Limit;
+	private int E2Limit;
 	private boolean solomon;
 
 	private ProblemInput() {
@@ -20,15 +20,15 @@ public class ProblemInput {
 	}
 
 	private ProblemInput(int tourCount, int visitablePOICount, POI startingPOI, POI endingPOI, POI[] visitablePOIs, 
-						int budgetLimit, int[] maxAllowedVisitsForEachType, boolean solomon) { 
+						int E1Limit, int E2Limit, boolean solomon) { 
 		this.tourCount = tourCount;
 		this.visitablePOICount = visitablePOICount;
 		this.startingPOI = startingPOI;
 		this.endingPOI = endingPOI;
 		this.visitablePOIs = visitablePOIs;
 		this.solomon = solomon;
-		this.budgetLimit = budgetLimit;
-		this.maxAllowedVisitsForEachType = maxAllowedVisitsForEachType;
+		this.E1Limit = E1Limit;
+		this.E2Limit = E2Limit;
 
 		assignTravelDistances();
 	}
@@ -81,8 +81,8 @@ public class ProblemInput {
 		POI startingPOI = null;
 		POI endingPOI = null;
 		POI[] visitablePOIs = null;
-		int budgetLimit = 0;
-		int[] maxAllowedVisitsForEachType = null;
+		int E1Limit = 0;
+		int E2Limit = 0;
 		
 		int lineCounter = 0;
 		int visitablePOICounter = 0;
@@ -93,17 +93,10 @@ public class ProblemInput {
 				tourCount = Integer.parseInt(firstLineComponents[0]);
 				visitablePOICount = Integer.parseInt(firstLineComponents[1]);
 				visitablePOIs = new POI[visitablePOICount];
-				budgetLimit = Math.round(Float.parseFloat(firstLineComponents[2]) * 100);
+				E1Limit = Math.round(Float.parseFloat(firstLineComponents[2]) * 100);
+				E2Limit = Math.round(Float.parseFloat(firstLineComponents[3]) * 100);
 			}
 			else if(lineCounter == 1) {
-				String secondLine = scanner.nextLine();
-				String[] secondLineComponents = secondLine.split(" ");
-				maxAllowedVisitsForEachType = new int[secondLineComponents.length];
-				for(int type = 0; type < secondLineComponents.length; type++) {
-					maxAllowedVisitsForEachType[type] = Integer.parseInt(secondLineComponents[type]);
-				}
-			}
-			else if(lineCounter == 2) {
 				String thirdLine = scanner.nextLine();
 				startingPOI = parsePOIFromLine(thirdLine);
 				endingPOI = parsePOIFromLine(thirdLine);
@@ -120,8 +113,7 @@ public class ProblemInput {
 
 		boolean solomon = filePath.contains("Solomon");
 
-		return new ProblemInput(tourCount, visitablePOICount, startingPOI, endingPOI, visitablePOIs, 
-								budgetLimit, maxAllowedVisitsForEachType, solomon);
+		return new ProblemInput(tourCount, visitablePOICount, startingPOI, endingPOI, visitablePOIs, E1Limit, E2Limit, solomon);
 	}
 	
 	public static POI parsePOIFromLine(String line) {
@@ -133,23 +125,15 @@ public class ProblemInput {
 		int score = Math.round(Float.parseFloat(lineComponents[4]) * 100);
 		int openingTime = Math.round(Float.parseFloat(lineComponents[5]) * 100);
 		int closingTime = Math.round(Float.parseFloat(lineComponents[6]) * 100);
-		int entranceFee = 0;
-		boolean[] typeBitArray = {};
+		int E1Value = 0;
+		int E2Value = 0;
 
 		if(lineComponents.length > 7) {
-			entranceFee = Math.round(Float.parseFloat(lineComponents[7]) * 100);
-			typeBitArray = new boolean[lineComponents.length - 7];
-			for(int component = 8; component < lineComponents.length; component++) {
-				if(lineComponents[component].equals("1")) {
-					typeBitArray[component - 8] = true;
-				}
-				else {
-					typeBitArray[component - 8] = false;
-				}
-			}
+			E1Value = Math.round(Float.parseFloat(lineComponents[7]) * 100);
+			E2Value = Math.round(Float.parseFloat(lineComponents[8]) * 100);
 		}
 
-		return new POI(ID, xCoordinate, yCoordinate, duration, score, openingTime, closingTime, entranceFee, typeBitArray);
+		return new POI(ID, xCoordinate, yCoordinate, duration, score, openingTime, closingTime, E1Value, E2Value);
 	}
 
 	public int getTourCount() {
@@ -172,15 +156,11 @@ public class ProblemInput {
 		return this.visitablePOIs;
 	}
 
-	public int getBudgetLimit() {
-		return this.budgetLimit;
+	public int getE1Limit() {
+		return this.E1Limit;
 	}
 
-	public int[] getMaxAllowedVisitsForEachType() {
-		return this.maxAllowedVisitsForEachType;
-	}
-
-	public int getMaxAllowedVisitsForType(int type) {
-		return this.maxAllowedVisitsForEachType[type];
+	public int getE2Limit() {
+		return this.E2Limit;
 	}
 }
