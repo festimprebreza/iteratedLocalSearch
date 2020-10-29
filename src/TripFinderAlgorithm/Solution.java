@@ -420,6 +420,10 @@ public class Solution implements Cloneable {
 			return false;
 		}
 		// travel
+		int[] availableTimes = new int[problemInput.getTourCount()];
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			availableTimes[tour]  = 0;
+		}
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
 			while(currentPOIInterval != null) {
@@ -429,6 +433,12 @@ public class Solution implements Cloneable {
 					return false;
 				}
 				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+			}
+		}
+		// available time
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			if(availableTimes[tour] != this.availableTime[tour]) {
+				return false;
 			}
 		}
 		// maxshift
