@@ -205,7 +205,7 @@ public class Solution implements Cloneable {
 		float secondComponent = entranceFee / (float)availableBudget;
 		float thirdComponent = 1 / (float)visitsOfTypeLeft;
 		
-		return firstComponent + 0.5f * secondComponent + 0.5f * thirdComponent;
+		return firstComponent + (1/11.0f) * secondComponent + (1/11.0f) * thirdComponent;
 	}
 
 	public POIInterval insertPOI(POI POIToBeInserted, POIInterval POIIntervalAfterInsertPosition, int assignedTypeOfBestPOI) {
@@ -427,6 +427,7 @@ public class Solution implements Cloneable {
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
 			while(currentPOIInterval != null) {
+				availableTimes[tour] += currentPOIInterval.getWaitTime();
 				int currentTravelTime = currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID());
 				if(currentPOIInterval.getArrivalTime() - currentPOIInterval.getPreviousPOIInterval().getEndingTime() != currentTravelTime) {
 					System.out.println("Arrival time does not match!");
