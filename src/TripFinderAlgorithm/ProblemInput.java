@@ -13,6 +13,7 @@ public class ProblemInput {
 	private POI[] visitablePOIs;
 	private int budgetLimit;
 	private int[] maxAllowedVisitsForEachType;
+	private int[][] patternsForEachTour;
 	private boolean solomon;
 
 	private ProblemInput() {
@@ -20,7 +21,7 @@ public class ProblemInput {
 	}
 
 	private ProblemInput(int tourCount, int visitablePOICount, POI startingPOI, POI endingPOI, POI[] visitablePOIs, 
-						int budgetLimit, int[] maxAllowedVisitsForEachType, boolean solomon) { 
+						int budgetLimit, int[] maxAllowedVisitsForEachType, int[][] patternsForEachTour, boolean solomon) { 
 		this.tourCount = tourCount;
 		this.visitablePOICount = visitablePOICount;
 		this.startingPOI = startingPOI;
@@ -29,6 +30,7 @@ public class ProblemInput {
 		this.solomon = solomon;
 		this.budgetLimit = budgetLimit;
 		this.maxAllowedVisitsForEachType = maxAllowedVisitsForEachType;
+		this.patternsForEachTour = patternsForEachTour;
 
 		assignTravelDistances();
 	}
@@ -83,33 +85,45 @@ public class ProblemInput {
 		POI[] visitablePOIs = null;
 		int budgetLimit = 0;
 		int[] maxAllowedVisitsForEachType = null;
+		int[][] patternsForEachTour = null;
 		
 		int lineCounter = 0;
 		int visitablePOICounter = 0;
 		while(scanner.hasNextLine()) {
+			String currentLine = scanner.nextLine();
 			if(lineCounter == 0) {
-				String firstLine = scanner.nextLine();
-				String[] firstLineComponents = firstLine.split(" ");
+				String[] firstLineComponents = currentLine.split(" ");
 				tourCount = Integer.parseInt(firstLineComponents[0]);
 				visitablePOICount = Integer.parseInt(firstLineComponents[1]);
 				visitablePOIs = new POI[visitablePOICount];
+				patternsForEachTour = new int[tourCount][];
 				budgetLimit = Math.round(Float.parseFloat(firstLineComponents[2]) * 100);
 			}
 			else if(lineCounter == 1) {
-				String secondLine = scanner.nextLine();
-				String[] secondLineComponents = secondLine.split(" ");
-				maxAllowedVisitsForEachType = new int[secondLineComponents.length];
-				for(int type = 0; type < secondLineComponents.length; type++) {
-					maxAllowedVisitsForEachType[type] = Integer.parseInt(secondLineComponents[type]);
+				String[] typesLineComponents = currentLine.split(" ");
+				maxAllowedVisitsForEachType = new int[typesLineComponents.length];
+				for(int type = 0; type < typesLineComponents.length; type++) {
+					maxAllowedVisitsForEachType[type] = Integer.parseInt(typesLineComponents[type]);
 				}
 			}
 			else if(lineCounter == 2) {
-				String thirdLine = scanner.nextLine();
-				startingPOI = parsePOIFromLine(thirdLine);
-				endingPOI = parsePOIFromLine(thirdLine);
+				String[] patternsLineComponents = currentLine.split(" ");
+				for(int tour = 0; tour < tourCount; tour++) {
+					patternsForEachTour[tour] = new int[Integer.parseInt(patternsLineComponents[tour])];
+				}
+			}
+			else if(lineCounter > 2 && lineCounter < 3 + tourCount) {
+				String[] patternsLineForTourComponents = currentLine.split(" ");
+				int currentTour = lineCounter - 3;
+				for(int patternCount = 0; patternCount < patternsLineForTourComponents.length; patternCount++) {
+					patternsForEachTour[currentTour][patternCount] = Integer.parseInt(patternsLineForTourComponents[patternCount]);
+				}
+			}
+			else if(lineCounter == 3 + tourCount) {
+				startingPOI = parsePOIFromLine(currentLine);
+				endingPOI = parsePOIFromLine(currentLine);
 			}
 			else {
-				String currentLine = scanner.nextLine();
 				visitablePOIs[visitablePOICounter] = parsePOIFromLine(currentLine);
 				visitablePOIs[visitablePOICounter].createTabuInfo(tourCount);
 				visitablePOICounter++;
@@ -121,7 +135,7 @@ public class ProblemInput {
 		boolean solomon = filePath.contains("Solomon");
 
 		return new ProblemInput(tourCount, visitablePOICount, startingPOI, endingPOI, visitablePOIs, 
-								budgetLimit, maxAllowedVisitsForEachType, solomon);
+								budgetLimit, maxAllowedVisitsForEachType, patternsForEachTour, solomon);
 	}
 	
 	public static POI parsePOIFromLine(String line) {
@@ -182,5 +196,13 @@ public class ProblemInput {
 
 	public int getMaxAllowedVisitsForType(int type) {
 		return this.maxAllowedVisitsForEachType[type];
+	}
+
+	public int[][] getPatternsForEachTour() {
+		return this.patternsForEachTour;
+	}
+
+	public int[] getPatternsForTour(int tour) {
+		return this.patternsForEachTour[tour];
 	}
 }
