@@ -2,6 +2,7 @@ package TripFinderAlgorithm;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -15,13 +16,15 @@ public class ProblemInput {
 	private int[] maxAllowedVisitsForEachType;
 	private int[][] patternsForEachTour;
 	private boolean solomon;
+	private HashMap<Integer, ArrayList<POI>> POIsForEachPatternType;
 
 	private ProblemInput() {
 
 	}
 
 	private ProblemInput(int tourCount, int visitablePOICount, POI startingPOI, POI endingPOI, POI[] visitablePOIs, 
-						int budgetLimit, int[] maxAllowedVisitsForEachType, int[][] patternsForEachTour, boolean solomon) { 
+						int budgetLimit, int[] maxAllowedVisitsForEachType, int[][] patternsForEachTour, 
+						HashMap<Integer, ArrayList<POI>> POIsForEachPatternType, boolean solomon) { 
 		this.tourCount = tourCount;
 		this.visitablePOICount = visitablePOICount;
 		this.startingPOI = startingPOI;
@@ -31,6 +34,7 @@ public class ProblemInput {
 		this.budgetLimit = budgetLimit;
 		this.maxAllowedVisitsForEachType = maxAllowedVisitsForEachType;
 		this.patternsForEachTour = patternsForEachTour;
+		this.POIsForEachPatternType = POIsForEachPatternType;
 
 		assignTravelDistances();
 	}
@@ -86,6 +90,7 @@ public class ProblemInput {
 		int budgetLimit = 0;
 		int[] maxAllowedVisitsForEachType = null;
 		int[][] patternsForEachTour = null;
+		HashMap<Integer, ArrayList<POI>> POIsForEachPatternType =  new HashMap<>();
 		
 		int lineCounter = 0;
 		int visitablePOICounter = 0;
@@ -116,7 +121,11 @@ public class ProblemInput {
 				String[] patternsLineForTourComponents = currentLine.split(" ");
 				int currentTour = lineCounter - 3;
 				for(int patternCount = 0; patternCount < patternsLineForTourComponents.length; patternCount++) {
-					patternsForEachTour[currentTour][patternCount] = Integer.parseInt(patternsLineForTourComponents[patternCount]);
+					int patternType = Integer.parseInt(patternsLineForTourComponents[patternCount]) - 1;
+					patternsForEachTour[currentTour][patternCount] = patternType;
+					if(!POIsForEachPatternType.keySet().contains(patternType)) {
+						POIsForEachPatternType.put(patternType, new ArrayList<POI>());
+					}
 				}
 			}
 			else if(lineCounter == 3 + tourCount) {
@@ -125,6 +134,11 @@ public class ProblemInput {
 			}
 			else {
 				visitablePOIs[visitablePOICounter] = parsePOIFromLine(currentLine);
+				for(int type: visitablePOIs[visitablePOICounter].getTypes()) {
+					if(POIsForEachPatternType.keySet().contains(type)) {
+						POIsForEachPatternType.get(type).add(visitablePOIs[visitablePOICounter]);
+					}
+				}
 				visitablePOIs[visitablePOICounter].createTabuInfo(tourCount);
 				visitablePOICounter++;
 			}
@@ -135,7 +149,7 @@ public class ProblemInput {
 		boolean solomon = filePath.contains("Solomon");
 
 		return new ProblemInput(tourCount, visitablePOICount, startingPOI, endingPOI, visitablePOIs, 
-								budgetLimit, maxAllowedVisitsForEachType, patternsForEachTour, solomon);
+								budgetLimit, maxAllowedVisitsForEachType, patternsForEachTour, POIsForEachPatternType, solomon);
 	}
 	
 	public static POI parsePOIFromLine(String line) {
@@ -204,5 +218,13 @@ public class ProblemInput {
 
 	public int[] getPatternsForTour(int tour) {
 		return this.patternsForEachTour[tour];
+	}
+
+	public HashMap<Integer, ArrayList<POI>> getPOIsForEachPatternType() {
+		return this.POIsForEachPatternType;
+	}
+
+	public ArrayList<POI> getPOIsForPatternType(int type) {
+		return this.POIsForEachPatternType.get(type);
 	}
 }

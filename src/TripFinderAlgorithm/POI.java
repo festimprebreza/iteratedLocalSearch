@@ -18,6 +18,7 @@ public class POI implements Cloneable {
 
 	private boolean isAssigned;
 	private int[] lastRemovedIteration;
+	private boolean isPivot;
 
 	public POI(int ID, long xCoordinate, long yCoordinate, int duration, int score, int openingTime, 
 				int closingTime, int entranceFee, boolean[] typeBitArray) {
@@ -111,6 +112,14 @@ public class POI implements Cloneable {
 
 	public void updateLastRemovedIteration(int currentIteration, int tour) {
 		this.lastRemovedIteration[tour] = currentIteration;
+	}
+
+	public boolean isPivot() {
+		return this.isPivot;
+	}
+
+	public void setIsPivot(boolean isPivot) {
+		this.isPivot = isPivot;
 	}
 
 	@Override

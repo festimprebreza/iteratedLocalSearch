@@ -14,6 +14,11 @@ public class IteratedLocalSearch {
 
 		int removeNConsecutiveVisitsLimit = (int)(problemInput.getVisitablePOICount() / (3 * problemInput.getTourCount()));
 		int numberOfTimesWithNoImprovement = 0;
+
+		if(!currentSolution.insertPivots(0, 0)) {
+			return;
+		}
+
 		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
 			while(currentSolution.notStuckInLocalOptimum()) {
 				currentSolution.insertStep();
