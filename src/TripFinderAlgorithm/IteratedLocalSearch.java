@@ -42,8 +42,8 @@ public class IteratedLocalSearch {
 			if(!currentSolution.isValid()) {
 				System.exit(1);
 			}
-			// System.out.println("SHAKE STEP; Sd parameter: " + startRemoveAt + "; Rd parameter: " + removeNConsecutiveVisits);
-			// System.out.println(currentSolution);
+			System.out.println("SHAKE STEP; Sd parameter: " + startRemoveAt + "; Rd parameter: " + removeNConsecutiveVisits);
+			System.out.println(currentSolution);
 			startRemoveAt += removeNConsecutiveVisits;
 			removeNConsecutiveVisits++;
 

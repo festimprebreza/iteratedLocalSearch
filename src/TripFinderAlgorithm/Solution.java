@@ -343,9 +343,13 @@ public class Solution implements Cloneable {
 
 			POIInterval currentPOIInterval = getNthPOIIntervalInTourX(startRemoveAt % tourSizes[tour], tour);
 
-			while(currentDayRemovals < removeNConsecutiveVisits && this.tourSizes[tour] != 0) {
+			while(currentDayRemovals < removeNConsecutiveVisits && this.tourSizes[tour] > problemInput.getPatternsForTour(tour).length) {
 				int iterationsWithoutFindingRemovablePOI = 0;
+				POIInterval lastNonPivotPOIInterval = null;
 				while(!canRemovePOIInterval(currentPOIInterval, tabuIterations, tour)) {
+					if(!currentPOIInterval.getPOI().isPivot()) {
+						lastNonPivotPOIInterval = currentPOIInterval;
+					}
 					if(iterationsWithoutFindingRemovablePOI == this.tourSizes[tour] - 1) {
 						break;
 					}
@@ -356,6 +360,9 @@ public class Solution implements Cloneable {
 					iterationsWithoutFindingRemovablePOI++;
 				}
 
+				if(lastNonPivotPOIInterval != null) {
+					currentPOIInterval = lastNonPivotPOIInterval;
+				}
 				this.score -= currentPOIInterval.getPOI().getScore();
 				this.totalMoneySpent -= currentPOIInterval.getPOI().getEntranceFee();
 				this.visitCountOfEachType[currentPOIInterval.getAssignedType()] -= 1;
@@ -401,7 +408,11 @@ public class Solution implements Cloneable {
 	}
 
 	public boolean canRemovePOIInterval(POIInterval POIIntervalToBeRemoved, int tabuIterations, int tour) {
-		return this.currentIteration - POIIntervalToBeRemoved.getPOI().getLastRemovedIteration(tour) > tabuIterations;
+		if(this.currentIteration - POIIntervalToBeRemoved.getPOI().getLastRemovedIteration(tour) > tabuIterations &&
+			!POIIntervalToBeRemoved.getPOI().isPivot()) {
+			return true;
+		}
+		return false;
 	}
 
 	public POIInterval removePOIInterval(POIInterval currentPOIInterval) {
@@ -553,7 +564,7 @@ public class Solution implements Cloneable {
 				if(currentPOIInterval.getArrivalTime() != 0) {
 					resultPart2 += "----->" + String.format("%7s", (currentPOIInterval.getArrivalTime() / 100.0f));
 					if(currentPOIInterval.getWaitTime() != 0) {
-						resultPart2 += ".....";
+						resultPart2 += "....";
 					}
 					if(currentPOIInterval.getPreviousPOIInterval().getArrivalTime() != 0) {
 						int expectedArrivalTime = currentPOIInterval.getPreviousPOIInterval().getEndingTime() + currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID());
@@ -567,12 +578,15 @@ public class Solution implements Cloneable {
 						resultPart2 += "\t\t" + resultComponent1 + "\t" +
 									resultComponent2 + "\t" + (lastMaxShift / 100.0f) + "\t" + (lastMaxShift1 / 100.0f) + "\t" 
 									+ (lastMaxShift2 / 100.0f) + "\t" + (maxShift / 100.0f) + "\t" + (wait / 100.0f);
+						if(currentPOIInterval.getPreviousPOIInterval().getPOI().isPivot()) {
+							resultPart2 += "\tPIVOT";
+						}
 					}
 				}
 				resultPart2 += "\r\n|" + 
 								String.format("%7s", (currentPOIInterval.getStartingTime() / 100.0f)) + 
 								"____" + String.format("%3s", currentPOIInterval.getPOI().getID()) + 
-								"^" + String.format("%2s", currentPOIInterval.getAssignedType()) + 
+								"*" + String.format("%2s", currentPOIInterval.getAssignedType()) + 
 								"____" + String.format("%7s", (currentPOIInterval.getEndingTime() / 100.0f)) + "|";
 	
 				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
