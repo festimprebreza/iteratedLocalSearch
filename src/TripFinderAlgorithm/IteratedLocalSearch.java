@@ -19,7 +19,13 @@ public class IteratedLocalSearch {
 			return;
 		}
 
+		int pivotChangeCounter = 0;
 		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
+			if(pivotChangeCounter == MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT / 5) {
+				currentSolution.updatePivots();
+				pivotChangeCounter = 0;
+			}
+
 			while(currentSolution.notStuckInLocalOptimum()) {
 				currentSolution.insertStep();
 				if(!currentSolution.isValid()) {
@@ -42,8 +48,8 @@ public class IteratedLocalSearch {
 			if(!currentSolution.isValid()) {
 				System.exit(1);
 			}
-			System.out.println("SHAKE STEP; Sd parameter: " + startRemoveAt + "; Rd parameter: " + removeNConsecutiveVisits);
-			System.out.println(currentSolution);
+			// System.out.println("SHAKE STEP; Sd parameter: " + startRemoveAt + "; Rd parameter: " + removeNConsecutiveVisits);
+			// System.out.println(currentSolution);
 			startRemoveAt += removeNConsecutiveVisits;
 			removeNConsecutiveVisits++;
 
@@ -53,6 +59,8 @@ public class IteratedLocalSearch {
 			if(removeNConsecutiveVisits == removeNConsecutiveVisitsLimit) {
 				removeNConsecutiveVisits = 1;
 			}
+
+			pivotChangeCounter++;
 		}
 	}
 

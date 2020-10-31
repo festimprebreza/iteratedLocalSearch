@@ -10,6 +10,7 @@ public class POIInterval implements Cloneable {
 	private int wait;
 	private int maxShift;
 	private int assignedType;
+	private boolean isPivot;
 
 	public POIInterval(POI containedPOI, int startingTime, int assignedType) {
 		this.containedPOI = containedPOI;
@@ -90,6 +91,14 @@ public class POIInterval implements Cloneable {
 
 	public int getAssignedType() {
 		return assignedType;
+	}
+
+	public boolean isPivot() {
+		return this.isPivot;
+	}
+
+	public void setIsPivot(boolean isPivot) {
+		this.isPivot = isPivot;
 	}
 
 	@Override

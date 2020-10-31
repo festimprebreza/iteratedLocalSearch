@@ -2,6 +2,7 @@ package TripFinderAlgorithm;
 
 import java.util.ArrayList;
 import java.util.PriorityQueue;
+import java.util.Random;
 
 public class Solution implements Cloneable {
 	private POIInterval[] startingPOIIntervals;
@@ -76,41 +77,61 @@ public class Solution implements Cloneable {
 		PriorityQueue<POIInsertData> sortedPossibleInserts = getSortedListOfPossibleInserts(
 																	problemInput.getPOIsForPatternType(currentType), currentType,
 																	tour);
-		while(!sortedPossibleInserts.isEmpty()) {
-			POIInsertData currentBestPOIInsertData = sortedPossibleInserts.poll();
-			if(currentBestPOIInsertData.containedPOI.isAssigned()) {
-				continue;
+		int probabilityFactor = 7;
+		while(true) {
+			ArrayList<POIInsertData> notInsertedPOIsList = new ArrayList<>();
+			while(!sortedPossibleInserts.isEmpty()) {
+				POIInsertData currentBestPOIInsertData = sortedPossibleInserts.poll();
+				if(currentBestPOIInsertData.containedPOI.isAssigned()) {
+					continue;
+				}
+				if(currentBestPOIInsertData.containedPOI.hasAlreadyBeenUsedAsAPivotForType(currentType)) {
+					if((new Random()).nextInt(10) < probabilityFactor) {
+						notInsertedPOIsList.add(currentBestPOIInsertData);
+						continue;
+					}
+				}
+				// insert
+				int shiftOfBestPOI = getShift(currentBestPOIInsertData.containedPOI, endingPOIIntervals[tour]);
+				POIInterval newPOIInterval = insertPOI(currentBestPOIInsertData.containedPOI, endingPOIIntervals[tour], currentType);
+				calculateArriveStartAndWaitForNewPOI(newPOIInterval);
+				updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), shiftOfBestPOI);
+				updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);
+				this.score += currentBestPOIInsertData.containedPOI.getScore();
+				this.totalMoneySpent += currentBestPOIInsertData.containedPOI.getEntranceFee();
+				this.visitCountOfEachType[currentType] += 1;
+				this.stuckInLocalOptimum = false;
+				this.tourSizes[tour] += 1;
+				this.availableTime[tour] -= (shiftOfBestPOI - newPOIInterval.getWaitTime());
+				newPOIInterval.setIsPivot(true);
+				newPOIInterval.getPOI().setUsedAsPivotForType(currentType);
+				if(insertPivots(nextTour, nextTypeCount)) {
+					return true;
+				}
+				// backtrack
+				this.score -= newPOIInterval.getPOI().getScore();
+				this.totalMoneySpent -= newPOIInterval.getPOI().getEntranceFee();
+				this.visitCountOfEachType[currentType] -= 1;
+				this.availableTime[tour] += newPOIInterval.getPOI().getDuration() + 
+										newPOIInterval.getPOI().getTravelTimeToPOI(newPOIInterval.getPreviousPOIInterval().getPOI().getID()) + 
+										newPOIInterval.getPOI().getTravelTimeToPOI(newPOIInterval.getNextPOIInterval().getPOI().getID()) -
+										newPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(newPOIInterval.getNextPOIInterval().getPOI().getID());
+				newPOIInterval.getPOI().updateLastRemovedIteration(this.currentIteration, tour);
+				newPOIInterval.setIsPivot(false);
+				removePOIInterval(newPOIInterval);
+				this.tourSizes[tour] -= 1;
+				updateParametersForFollowingVisitsAfterRemoval(startingPOIIntervals[tour].getNextPOIInterval(), endingPOIIntervals[tour]);
+				updateMaxShiftForPreviousVisitsAndThis(endingPOIIntervals[tour].getPreviousPOIInterval());
 			}
-			// insert
-			int shiftOfBestPOI = getShift(currentBestPOIInsertData.containedPOI, endingPOIIntervals[tour]);
-			POIInterval newPOIInterval = insertPOI(currentBestPOIInsertData.containedPOI, endingPOIIntervals[tour], currentType);
-			calculateArriveStartAndWaitForNewPOI(newPOIInterval);
-			updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), shiftOfBestPOI);
-			updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);
-			this.score += currentBestPOIInsertData.containedPOI.getScore();
-			this.totalMoneySpent += currentBestPOIInsertData.containedPOI.getEntranceFee();
-			this.visitCountOfEachType[currentType] += 1;
-			this.stuckInLocalOptimum = false;
-			this.tourSizes[tour] += 1;
-			this.availableTime[tour] -= (shiftOfBestPOI - newPOIInterval.getWaitTime());
-			newPOIInterval.getPOI().setIsPivot(true);
-			if(insertPivots(nextTour, nextTypeCount)) {
-				return true;
+			if(notInsertedPOIsList.size() != 0) {
+				for(POIInsertData currentPOIInsertData: notInsertedPOIsList) {
+					sortedPossibleInserts.add(currentPOIInsertData);
+				}
+				probabilityFactor = 0;
 			}
-			// backtrack
-			this.score -= newPOIInterval.getPOI().getScore();
-			this.totalMoneySpent -= newPOIInterval.getPOI().getEntranceFee();
-			this.visitCountOfEachType[currentType] -= 1;
-			this.availableTime[tour] += newPOIInterval.getPOI().getDuration() + 
-									newPOIInterval.getPOI().getTravelTimeToPOI(newPOIInterval.getPreviousPOIInterval().getPOI().getID()) + 
-									newPOIInterval.getPOI().getTravelTimeToPOI(newPOIInterval.getNextPOIInterval().getPOI().getID()) -
-									newPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(newPOIInterval.getNextPOIInterval().getPOI().getID());
-			newPOIInterval.getPOI().updateLastRemovedIteration(this.currentIteration, tour);
-			newPOIInterval.getPOI().setIsPivot(false);
-			removePOIInterval(newPOIInterval);
-			this.tourSizes[tour] -= 1;
-			updateParametersForFollowingVisitsAfterRemoval(startingPOIIntervals[tour].getNextPOIInterval(), endingPOIIntervals[tour]);
-			updateMaxShiftForPreviousVisitsAndThis(endingPOIIntervals[tour].getPreviousPOIInterval());
+			else {
+				break;
+			}
 		}
 		return false;
 	}
@@ -128,6 +149,29 @@ public class Solution implements Cloneable {
 			}
 		}
 		return myPriorityQueue;
+	}
+
+	public void updatePivots() {
+		removeAllPOIs();
+		insertPivots(0, 0);
+	}
+
+	public void removeAllPOIs() {
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+			while(currentPOIInterval != endingPOIIntervals[tour]) {
+				this.visitCountOfEachType[currentPOIInterval.getAssignedType()] -= 1;
+				if(currentPOIInterval.isPivot()) {
+					currentPOIInterval.setIsPivot(false);
+				}
+				currentPOIInterval = removePOIInterval(currentPOIInterval);
+			}
+			this.tourSizes[tour] = 0;
+			this.score = 0;
+			this.totalMoneySpent = 0;
+			updateParametersForFollowingVisitsAfterRemoval(startingPOIIntervals[tour].getNextPOIInterval(), endingPOIIntervals[tour]);
+			this.availableTime[tour] = endingPOIIntervals[tour].getWaitTime();
+		}
 	}
 
 	public void insertStep() {
@@ -347,7 +391,7 @@ public class Solution implements Cloneable {
 				int iterationsWithoutFindingRemovablePOI = 0;
 				POIInterval lastNonPivotPOIInterval = null;
 				while(!canRemovePOIInterval(currentPOIInterval, tabuIterations, tour)) {
-					if(!currentPOIInterval.getPOI().isPivot()) {
+					if(!currentPOIInterval.isPivot()) {
 						lastNonPivotPOIInterval = currentPOIInterval;
 					}
 					if(iterationsWithoutFindingRemovablePOI == this.tourSizes[tour] - 1) {
@@ -409,7 +453,7 @@ public class Solution implements Cloneable {
 
 	public boolean canRemovePOIInterval(POIInterval POIIntervalToBeRemoved, int tabuIterations, int tour) {
 		if(this.currentIteration - POIIntervalToBeRemoved.getPOI().getLastRemovedIteration(tour) > tabuIterations &&
-			!POIIntervalToBeRemoved.getPOI().isPivot()) {
+			!POIIntervalToBeRemoved.isPivot()) {
 			return true;
 		}
 		return false;
@@ -578,7 +622,7 @@ public class Solution implements Cloneable {
 						resultPart2 += "\t\t" + resultComponent1 + "\t" +
 									resultComponent2 + "\t" + (lastMaxShift / 100.0f) + "\t" + (lastMaxShift1 / 100.0f) + "\t" 
 									+ (lastMaxShift2 / 100.0f) + "\t" + (maxShift / 100.0f) + "\t" + (wait / 100.0f);
-						if(currentPOIInterval.getPreviousPOIInterval().getPOI().isPivot()) {
+						if(currentPOIInterval.getPreviousPOIInterval().isPivot()) {
 							resultPart2 += "\tPIVOT";
 						}
 					}

@@ -18,7 +18,7 @@ public class POI implements Cloneable {
 
 	private boolean isAssigned;
 	private int[] lastRemovedIteration;
-	private boolean isPivot;
+	private boolean[] alreadyUsedAsAPivot;
 
 	public POI(int ID, long xCoordinate, long yCoordinate, int duration, int score, int openingTime, 
 				int closingTime, int entranceFee, boolean[] typeBitArray) {
@@ -31,6 +31,7 @@ public class POI implements Cloneable {
 		this.closingTime = closingTime;
 		this.entranceFee = entranceFee;
 		this.typeBitArray = typeBitArray;
+		alreadyUsedAsAPivot = new boolean[typeBitArray.length];
 
 		types = new ArrayList<>();
 		for(int type = 0; type < typeBitArray.length; type++) {
@@ -114,12 +115,12 @@ public class POI implements Cloneable {
 		this.lastRemovedIteration[tour] = currentIteration;
 	}
 
-	public boolean isPivot() {
-		return this.isPivot;
+	public boolean hasAlreadyBeenUsedAsAPivotForType(int type) {
+		return this.alreadyUsedAsAPivot[type];
 	}
 
-	public void setIsPivot(boolean isPivot) {
-		this.isPivot = isPivot;
+	public void setUsedAsPivotForType(int type) {
+		this.alreadyUsedAsAPivot[type] = true;
 	}
 
 	@Override
