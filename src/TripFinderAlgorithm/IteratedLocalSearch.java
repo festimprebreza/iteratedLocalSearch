@@ -19,6 +19,7 @@ public class IteratedLocalSearch {
 			return;
 		}
 
+		int currentIteration = 0;
 		int pivotChangeCounter = 0;
 		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
 			if(pivotChangeCounter == MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT / 5) {
@@ -44,7 +45,7 @@ public class IteratedLocalSearch {
 			else {
 				numberOfTimesWithNoImprovement++;
 			}
-			currentSolution.shakeStep(startRemoveAt, removeNConsecutiveVisits, TABU_ITERATIONS);
+			currentSolution.shakeStep(startRemoveAt, removeNConsecutiveVisits, TABU_ITERATIONS, currentIteration);
 			if(!currentSolution.isValid()) {
 				System.exit(1);
 			}
@@ -60,6 +61,7 @@ public class IteratedLocalSearch {
 				removeNConsecutiveVisits = 1;
 			}
 
+			currentIteration++;
 			pivotChangeCounter++;
 		}
 	}
