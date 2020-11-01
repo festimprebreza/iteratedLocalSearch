@@ -23,7 +23,7 @@ public class IteratedLocalSearch {
 		int pivotChangeCounter = 0;
 		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
 			if(pivotChangeCounter == MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT / 5) {
-				currentSolution.updatePivots();
+				currentSolution.changePivots();
 				pivotChangeCounter = 0;
 			}
 

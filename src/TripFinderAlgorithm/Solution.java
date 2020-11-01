@@ -69,56 +69,44 @@ public class Solution implements Cloneable {
 		}
 		int currentType = problemInput.getPatternsForTour(tour)[typeCount];
 		PriorityQueue<PivotInsertData> sortedPossibleInserts = getSortedListOfPossibleInserts(
-																	problemInput.getPOIsForPatternType(currentType), currentType,
-																	tour);
+																	problemInput.getPOIsForPatternType(currentType), 
+																	currentType, tour);
+		Random rand = new Random();
 		int probabilityFactor = 7;
 		while(true) {
-			ArrayList<PivotInsertData> notInsertedPOIsList = new ArrayList<>();
+			ArrayList<PivotInsertData> previouslyPivotPOIsNotInsertedInFirstIteration = new ArrayList<>();
 			while(!sortedPossibleInserts.isEmpty()) {
-				PivotInsertData currentBestPOIInsertData = sortedPossibleInserts.poll();
-				if(currentBestPOIInsertData.containedPOI.isAssigned()) {
+				PivotInsertData currentBestPivotInsertData = sortedPossibleInserts.poll();
+
+				if(currentBestPivotInsertData.containedPOI.isAssigned()) {
 					continue;
 				}
-				if(currentBestPOIInsertData.containedPOI.hasAlreadyBeenUsedAsAPivotForType(currentType)) {
-					if((new Random()).nextInt(10) < probabilityFactor) {
-						notInsertedPOIsList.add(currentBestPOIInsertData);
+				if(currentBestPivotInsertData.containedPOI.hasAlreadyBeenUsedAsAPivotForType(currentType)) {
+					if(rand.nextInt(10) < probabilityFactor) {
+						previouslyPivotPOIsNotInsertedInFirstIteration.add(currentBestPivotInsertData);
 						continue;
 					}
 				}
-				// insert
-				int shiftOfBestPOI = getShift(currentBestPOIInsertData.containedPOI, endingPOIIntervals[tour]);
-				POIInterval newPOIInterval = insertPOI(currentBestPOIInsertData.containedPOI, endingPOIIntervals[tour], currentType);
-				calculateArriveStartAndWaitForNewPOI(newPOIInterval);
-				updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), shiftOfBestPOI);
-				updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);
-				this.score += currentBestPOIInsertData.containedPOI.getScore();
-				this.totalMoneySpent += currentBestPOIInsertData.containedPOI.getEntranceFee();
-				this.visitCountOfEachType[currentType] += 1;
-				this.stuckInLocalOptimum = false;
-				this.tourSizes[tour] += 1;
-				this.availableTime[tour] -= (shiftOfBestPOI - newPOIInterval.getWaitTime());
+
+				int shiftOfBestPOI = getShift(currentBestPivotInsertData.containedPOI, endingPOIIntervals[tour]);
+				POIInterval newPOIInterval = insertAndUpdateData(new POIInsertData(currentBestPivotInsertData, 
+														endingPOIIntervals[tour], shiftOfBestPOI, tour, currentType));
 				newPOIInterval.setIsPivot(true);
 				newPOIInterval.getPOI().setUsedAsPivotForType(currentType);
+
 				if(insertPivots(nextTour, nextTypeCount)) {
 					return true;
 				}
-				// backtrack
-				this.score -= newPOIInterval.getPOI().getScore();
-				this.totalMoneySpent -= newPOIInterval.getPOI().getEntranceFee();
-				this.visitCountOfEachType[currentType] -= 1;
-				this.availableTime[tour] += newPOIInterval.getPOI().getDuration() + 
-										newPOIInterval.getPOI().getTravelTimeToPOI(newPOIInterval.getPreviousPOIInterval().getPOI().getID()) + 
-										newPOIInterval.getPOI().getTravelTimeToPOI(newPOIInterval.getNextPOIInterval().getPOI().getID()) -
-										newPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(newPOIInterval.getNextPOIInterval().getPOI().getID());
+
+				updateSolutionParametersBeforeRemoval(newPOIInterval, tour);
 				newPOIInterval.setIsPivot(false);
 				removePOIInterval(newPOIInterval);
-				this.tourSizes[tour] -= 1;
 				updateParametersForFollowingVisitsAfterRemoval(startingPOIIntervals[tour].getNextPOIInterval(), endingPOIIntervals[tour]);
 				updateMaxShiftForPreviousVisitsAndThis(endingPOIIntervals[tour].getPreviousPOIInterval());
 			}
-			if(notInsertedPOIsList.size() != 0) {
-				for(PivotInsertData currentPOIInsertData: notInsertedPOIsList) {
-					sortedPossibleInserts.add(currentPOIInsertData);
+			if(previouslyPivotPOIsNotInsertedInFirstIteration.size() != 0) {
+				for(PivotInsertData currentPivotInsertData: previouslyPivotPOIsNotInsertedInFirstIteration) {
+					sortedPossibleInserts.add(currentPivotInsertData);
 				}
 				probabilityFactor = 0;
 			}
@@ -151,7 +139,38 @@ public class Solution implements Cloneable {
 		return MathExtension.getMaxOfTwo(POIToBeInserted.getOpeningTime() - arrivalTime, 0);
 	}
 
-	public void updatePivots() {
+	public POIInterval insertAndUpdateData(POIInsertData bestPOIIInsertData) {
+		POIInterval newPOIInterval = insertPOI(bestPOIIInsertData.containedPOI, bestPOIIInsertData.POIIntervalAfterInsertPosition, 
+												bestPOIIInsertData.assignedType);
+		calculateArriveStartAndWaitForNewPOI(newPOIInterval);
+		updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), bestPOIIInsertData.shiftOfPOI);
+		updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);		
+		updateSolutionParametersAfterInsert(newPOIInterval, bestPOIIInsertData.tour, bestPOIIInsertData.shiftOfPOI);
+
+		return newPOIInterval;
+	}
+
+	public void updateSolutionParametersAfterInsert(POIInterval POIIntervalInserted, int tour, int shiftOfPOI) {
+		this.score += POIIntervalInserted.getPOI().getScore();
+		this.totalMoneySpent += POIIntervalInserted.getPOI().getEntranceFee();
+		this.visitCountOfEachType[POIIntervalInserted.getAssignedType()] += 1;
+		this.availableTime[tour] -= (shiftOfPOI - POIIntervalInserted.getWaitTime());
+		this.tourSizes[tour] += 1;
+		this.stuckInLocalOptimum = false;
+	}
+
+	public void updateSolutionParametersBeforeRemoval(POIInterval POIIntervalToBeRemoved, int tour) {
+		this.score -= POIIntervalToBeRemoved.getPOI().getScore();
+		this.totalMoneySpent -= POIIntervalToBeRemoved.getPOI().getEntranceFee();
+		this.visitCountOfEachType[POIIntervalToBeRemoved.getAssignedType()] -= 1;
+		this.availableTime[tour] += POIIntervalToBeRemoved.getPOI().getDuration() + 
+						POIIntervalToBeRemoved.getPOI().getTravelTimeToPOI(POIIntervalToBeRemoved.getPreviousPOIInterval().getPOI().getID()) + 
+						POIIntervalToBeRemoved.getPOI().getTravelTimeToPOI(POIIntervalToBeRemoved.getNextPOIInterval().getPOI().getID()) -
+						POIIntervalToBeRemoved.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(POIIntervalToBeRemoved.getNextPOIInterval().getPOI().getID());
+		this.tourSizes[tour] -= 1;
+	}
+
+	public void changePivots() {
 		removeAllPOIs();
 		insertPivots(0, 0);
 	}
@@ -176,19 +195,8 @@ public class Solution implements Cloneable {
 
 	public void insertStep() {
 		POIInsertData bestPOIIInsertData = getInfoForBestPOIToInsert();
-
 		if(bestPOIIInsertData != null) {
-			POIInterval newPOIInterval = insertPOI(bestPOIIInsertData.containedPOI, 
-											bestPOIIInsertData.POIIntervalAfterInsertPosition, bestPOIIInsertData.assignedType);
-			calculateArriveStartAndWaitForNewPOI(newPOIInterval);
-			updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), bestPOIIInsertData.shiftForPOI);
-			updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);
-			this.score += bestPOIIInsertData.containedPOI.getScore();
-			this.totalMoneySpent += bestPOIIInsertData.containedPOI.getEntranceFee();
-			this.visitCountOfEachType[bestPOIIInsertData.assignedType] += 1;
-			this.stuckInLocalOptimum = false;
-			this.tourSizes[bestPOIIInsertData.tour] += 1;
-			this.availableTime[bestPOIIInsertData.tour] -= (bestPOIIInsertData.shiftForPOI - newPOIInterval.getWaitTime());
+			insertAndUpdateData(bestPOIIInsertData);
 			return;
 		}
 
@@ -240,7 +248,7 @@ public class Solution implements Cloneable {
 					bestPOIInsertData.containedPOI = currentPOI;
 					bestPOIInsertData.POIIntervalAfterInsertPosition = POIIntervalAfterBestInsertPositionForThisPOI;
 					bestPOIInsertData.tour = tour;
-					bestPOIInsertData.shiftForPOI = shiftOnBestInsertForNewPOI;
+					bestPOIInsertData.shiftOfPOI = shiftOnBestInsertForNewPOI;
 					bestPOIInsertData.assignedType = assignedType;
 				}
 			}
@@ -392,19 +400,12 @@ public class Solution implements Cloneable {
 				if(lastNonPivotPOIInterval != null) {
 					currentPOIInterval = lastNonPivotPOIInterval;
 				}
-				this.score -= currentPOIInterval.getPOI().getScore();
-				this.totalMoneySpent -= currentPOIInterval.getPOI().getEntranceFee();
-				this.visitCountOfEachType[currentPOIInterval.getAssignedType()] -= 1;
-				this.availableTime[tour] += currentPOIInterval.getPOI().getDuration() + 
-										currentPOIInterval.getPOI().getTravelTimeToPOI(currentPOIInterval.getPreviousPOIInterval().getPOI().getID()) + 
-										currentPOIInterval.getPOI().getTravelTimeToPOI(currentPOIInterval.getNextPOIInterval().getPOI().getID()) -
-										currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getNextPOIInterval().getPOI().getID());
+				updateSolutionParametersBeforeRemoval(currentPOIInterval, tour);
 				currentPOIInterval.getPOI().updateLastRemovedIteration(currentIteration, tour);
 				currentPOIInterval = removePOIInterval(currentPOIInterval);
 				if(currentPOIInterval == endingPOIIntervals[tour] && currentDayRemovals != removeNConsecutiveVisits - 1) {
 					currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
 				}
-				this.tourSizes[tour] -= 1;				
 				currentDayRemovals++;
 			}
 			
@@ -719,16 +720,25 @@ public class Solution implements Cloneable {
 
 	private class POIInsertData extends PivotInsertData {
 		private POIInterval POIIntervalAfterInsertPosition;
-		private int shiftForPOI;
+		private int shiftOfPOI;
 		private int tour;
 		private int assignedType;
 
 		public POIInsertData() {
 			super(-1, null);
 			this.POIIntervalAfterInsertPosition = null;
-			this.shiftForPOI = -1;
+			this.shiftOfPOI = -1;
 			this.tour = -1;
 			this.assignedType = -1;
+		}
+
+		public POIInsertData(PivotInsertData pivotInsertData, POIInterval POIIntervalAfterInsertPosition, int shiftOfPOI,
+							int tour, int assignedType) {
+			super(pivotInsertData.ratio, pivotInsertData.containedPOI);
+			this.POIIntervalAfterInsertPosition = POIIntervalAfterInsertPosition;
+			this.shiftOfPOI = shiftOfPOI;
+			this.tour = tour;
+			this.assignedType = assignedType;
 		}
 	}
 }
