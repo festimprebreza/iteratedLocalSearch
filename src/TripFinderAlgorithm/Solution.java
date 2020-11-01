@@ -74,14 +74,14 @@ public class Solution implements Cloneable {
 			nextTypeCount = 0;
 		}
 		int currentType = problemInput.getPatternsForTour(tour)[typeCount];
-		PriorityQueue<POIInsertData> sortedPossibleInserts = getSortedListOfPossibleInserts(
+		PriorityQueue<PivotInsertData> sortedPossibleInserts = getSortedListOfPossibleInserts(
 																	problemInput.getPOIsForPatternType(currentType), currentType,
 																	tour);
 		int probabilityFactor = 7;
 		while(true) {
-			ArrayList<POIInsertData> notInsertedPOIsList = new ArrayList<>();
+			ArrayList<PivotInsertData> notInsertedPOIsList = new ArrayList<>();
 			while(!sortedPossibleInserts.isEmpty()) {
-				POIInsertData currentBestPOIInsertData = sortedPossibleInserts.poll();
+				PivotInsertData currentBestPOIInsertData = sortedPossibleInserts.poll();
 				if(currentBestPOIInsertData.containedPOI.isAssigned()) {
 					continue;
 				}
@@ -124,7 +124,7 @@ public class Solution implements Cloneable {
 				updateMaxShiftForPreviousVisitsAndThis(endingPOIIntervals[tour].getPreviousPOIInterval());
 			}
 			if(notInsertedPOIsList.size() != 0) {
-				for(POIInsertData currentPOIInsertData: notInsertedPOIsList) {
+				for(PivotInsertData currentPOIInsertData: notInsertedPOIsList) {
 					sortedPossibleInserts.add(currentPOIInsertData);
 				}
 				probabilityFactor = 0;
@@ -136,8 +136,8 @@ public class Solution implements Cloneable {
 		return false;
 	}
 
-	public PriorityQueue<POIInsertData> getSortedListOfPossibleInserts(ArrayList<POI> POIsOfCurrentType, int type, int tour) {
-		PriorityQueue<POIInsertData> myPriorityQueue = new PriorityQueue<>();
+	public PriorityQueue<PivotInsertData> getSortedListOfPossibleInserts(ArrayList<POI> POIsOfCurrentType, int type, int tour) {
+		PriorityQueue<PivotInsertData> myPriorityQueue = new PriorityQueue<>();
 		for(POI currentPOI: POIsOfCurrentType) {
 			if(canInsertBecauseOfConstraints(currentPOI.getEntranceFee(), type)) {
 				int shiftForNewPOI = getShift(currentPOI, endingPOIIntervals[tour]);
@@ -145,7 +145,7 @@ public class Solution implements Cloneable {
 					int waitTime = getWaitTimeIfAssigned(currentPOI, endingPOIIntervals[tour].getPreviousPOIInterval());
 					float denominatorForNewPOI = calculateDenominator(shiftForNewPOI - waitTime, currentPOI.getEntranceFee(), type, tour);
 					float ratio = (float)Math.pow(currentPOI.getScore() / 100.0f, 2) / denominatorForNewPOI;
-					myPriorityQueue.add(new POIInsertData(currentPOI, ratio));
+					myPriorityQueue.add(new PivotInsertData(ratio, currentPOI));
 				}
 			}
 		}
@@ -182,44 +182,29 @@ public class Solution implements Cloneable {
 	}
 
 	public void insertStep() {
-		ArrayList<Object> bestInsertInfo = getInfoForBestPOIToInsert();
+		POIInsertData bestPOIIInsertData = getInfoForBestPOIToInsert();
 
-		if(bestInsertInfo != null) {
-			POI bestPOIToBeInserted = (POI)bestInsertInfo.get(0);
-			POIInterval POIIntervalAfterBestInsertPosition = (POIInterval)bestInsertInfo.get(1);
-			int tourToInsertIn = (int)bestInsertInfo.get(2);
-			int shiftOfBestPOI = (int)bestInsertInfo.get(3);
-			int assignedTypeOfBestPOI = (int)bestInsertInfo.get(4);
-
-			POIInterval newPOIInterval = insertPOI(bestPOIToBeInserted, POIIntervalAfterBestInsertPosition, assignedTypeOfBestPOI);
+		if(bestPOIIInsertData != null) {
+			POIInterval newPOIInterval = insertPOI(bestPOIIInsertData.containedPOI, 
+											bestPOIIInsertData.POIIntervalAfterInsertPosition, bestPOIIInsertData.assignedType);
 			calculateArriveStartAndWaitForNewPOI(newPOIInterval);
-			updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), shiftOfBestPOI);
+			updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), bestPOIIInsertData.shiftForPOI);
 			updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);
-			this.score += bestPOIToBeInserted.getScore();
-			this.totalMoneySpent += bestPOIToBeInserted.getEntranceFee();
-			this.visitCountOfEachType[assignedTypeOfBestPOI] += 1;
+			this.score += bestPOIIInsertData.containedPOI.getScore();
+			this.totalMoneySpent += bestPOIIInsertData.containedPOI.getEntranceFee();
+			this.visitCountOfEachType[bestPOIIInsertData.assignedType] += 1;
 			this.stuckInLocalOptimum = false;
-			this.tourSizes[tourToInsertIn] += 1;
-			this.availableTime[tourToInsertIn] -= (shiftOfBestPOI - newPOIInterval.getWaitTime());
+			this.tourSizes[bestPOIIInsertData.tour] += 1;
+			this.availableTime[bestPOIIInsertData.tour] -= (bestPOIIInsertData.shiftForPOI - newPOIInterval.getWaitTime());
 			return;
 		}
 
 		this.stuckInLocalOptimum = true;
 	}
 
-	public ArrayList<Object> getInfoForBestPOIToInsert() {
-		ArrayList<Object> insertInfo = new ArrayList<>();
+	public POIInsertData getInfoForBestPOIToInsert() {
 		float highestRatio = -1;
-		POI bestPOIToBeInserted = null;
-		POIInterval POIIntervalAfterBestInsertPosition = null;
-		int tourToInsertIn = -1;
-		int shiftOfBestPOI = -1;
-		int assignedTypeOfBestPOI = -1;
-		insertInfo.add(bestPOIToBeInserted);
-		insertInfo.add(POIIntervalAfterBestInsertPosition);
-		insertInfo.add(tourToInsertIn);
-		insertInfo.add(shiftOfBestPOI);
-		insertInfo.add(assignedTypeOfBestPOI);
+		POIInsertData bestPOIInsertData = new POIInsertData();
 
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			for(POI currentPOI: problemInput.getVisitablePOIs()) {
@@ -258,17 +243,18 @@ public class Solution implements Cloneable {
 
 				if(Float.compare(highestRatioForThisPOI, highestRatio) > 0) {
 					highestRatio = highestRatioForThisPOI;
-					insertInfo.set(0, currentPOI);
-					insertInfo.set(1, POIIntervalAfterBestInsertPositionForThisPOI);
-					insertInfo.set(2, tour);
-					insertInfo.set(3, shiftOnBestInsertForNewPOI);
-					insertInfo.set(4, assignedType);
+					bestPOIInsertData.ratio = highestRatio;
+					bestPOIInsertData.containedPOI = currentPOI;
+					bestPOIInsertData.POIIntervalAfterInsertPosition = POIIntervalAfterBestInsertPositionForThisPOI;
+					bestPOIInsertData.tour = tour;
+					bestPOIInsertData.shiftForPOI = shiftOnBestInsertForNewPOI;
+					bestPOIInsertData.assignedType = assignedType;
 				}
 			}
 		}
 
 		if(Float.compare(highestRatio, -1) != 0) {
-			return insertInfo;
+			return bestPOIInsertData;
 		}
 		return null;
 	}
@@ -716,17 +702,17 @@ public class Solution implements Cloneable {
 		return clonedSolution;
 	}
 
-	private class POIInsertData implements Comparable<POIInsertData> {
-		private POI containedPOI;
-		private float ratio;
+	private class PivotInsertData implements Comparable<PivotInsertData> {
+		protected float ratio;
+		protected POI containedPOI;
 
-		public POIInsertData(POI containtedPOI, float ratio) {
-			this.containedPOI = containtedPOI;
+		public PivotInsertData(float ratio, POI containtedPOI) {
 			this.ratio = ratio;
+			this.containedPOI = containtedPOI;
 		}
 
 		@Override
-		public int compareTo(POIInsertData otherPOIData) {
+		public int compareTo(PivotInsertData otherPOIData) {
 			if(Float.compare(this.ratio, otherPOIData.ratio) > 0) {
 				return -1;
 			}
@@ -736,6 +722,21 @@ public class Solution implements Cloneable {
 			else {
 				return 0;
 			}
+		}
+	}
+
+	private class POIInsertData extends PivotInsertData {
+		private POIInterval POIIntervalAfterInsertPosition;
+		private int shiftForPOI;
+		private int tour;
+		private int assignedType;
+
+		public POIInsertData() {
+			super(-1, null);
+			this.POIIntervalAfterInsertPosition = null;
+			this.shiftForPOI = -1;
+			this.tour = -1;
+			this.assignedType = -1;
 		}
 	}
 }
