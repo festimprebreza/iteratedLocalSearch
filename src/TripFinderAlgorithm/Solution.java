@@ -142,13 +142,20 @@ public class Solution implements Cloneable {
 			if(canInsertBecauseOfConstraints(currentPOI.getEntranceFee(), type)) {
 				int shiftForNewPOI = getShift(currentPOI, endingPOIIntervals[tour]);
 				if(canInsertBeforeThisPOI(currentPOI, endingPOIIntervals[tour], shiftForNewPOI)) {
-					float denominatorForNewPOI = calculateDenominator(shiftForNewPOI, currentPOI.getEntranceFee(), type, tour);
+					int waitTime = getWaitTimeIfAssigned(currentPOI, endingPOIIntervals[tour].getPreviousPOIInterval());
+					float denominatorForNewPOI = calculateDenominator(shiftForNewPOI - waitTime, currentPOI.getEntranceFee(), type, tour);
 					float ratio = (float)Math.pow(currentPOI.getScore() / 100.0f, 2) / denominatorForNewPOI;
 					myPriorityQueue.add(new POIInsertData(currentPOI, ratio));
 				}
 			}
 		}
 		return myPriorityQueue;
+	}
+
+	public int getWaitTimeIfAssigned(POI POIToBeInserted, POIInterval POIIntervalBeforeInsertPosition) {
+		int arrivalTime = POIIntervalBeforeInsertPosition.getPOI().getTravelTimeToPOI(POIToBeInserted.getID()) + 
+							POIIntervalBeforeInsertPosition.getEndingTime();
+		return MathExtension.getMaxOfTwo(POIToBeInserted.getOpeningTime() - arrivalTime, 0);
 	}
 
 	public void updatePivots() {
