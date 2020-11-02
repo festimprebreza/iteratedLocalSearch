@@ -57,7 +57,7 @@ public class Solution implements Cloneable {
 		return !this.stuckInLocalOptimum;
 	}
 
-	public boolean insertPivots(int tour, int typeCount) {
+	public boolean insertPivots(int tour, int typeCount, int probabilityFactor) {
 		int nextTour = tour;
 		int nextTypeCount = typeCount + 1;
 		if(tour == problemInput.getTourCount()) {
@@ -72,9 +72,9 @@ public class Solution implements Cloneable {
 																	problemInput.getPOIsForPatternType(currentType), 
 																	currentType, tour);
 		Random rand = new Random();
-		int probabilityFactor = 7;
+		int currentProbabilityFactor = probabilityFactor;
+		ArrayList<PivotInsertData> previouslyPivotPOIsNotInsertedInFirstIteration = new ArrayList<>();
 		while(true) {
-			ArrayList<PivotInsertData> previouslyPivotPOIsNotInsertedInFirstIteration = new ArrayList<>();
 			while(!sortedPossibleInserts.isEmpty()) {
 				PivotInsertData currentBestPivotInsertData = sortedPossibleInserts.poll();
 
@@ -82,7 +82,7 @@ public class Solution implements Cloneable {
 					continue;
 				}
 				if(currentBestPivotInsertData.containedPOI.hasAlreadyBeenUsedAsAPivotForType(currentType)) {
-					if(rand.nextInt(10) < probabilityFactor) {
+					if(rand.nextInt(10) < currentProbabilityFactor) {
 						previouslyPivotPOIsNotInsertedInFirstIteration.add(currentBestPivotInsertData);
 						continue;
 					}
@@ -94,24 +94,25 @@ public class Solution implements Cloneable {
 				newPOIInterval.setIsPivot(true);
 				newPOIInterval.getPOI().setUsedAsPivotForType(currentType);
 
-				if(insertPivots(nextTour, nextTypeCount)) {
+				if(insertPivots(nextTour, nextTypeCount, probabilityFactor)) {
 					return true;
 				}
 
 				updateSolutionParametersBeforeRemoval(newPOIInterval, tour);
-				newPOIInterval.setIsPivot(false);
 				removePOIInterval(newPOIInterval);
-				updateParametersForFollowingVisitsAfterRemoval(startingPOIIntervals[tour].getNextPOIInterval(), endingPOIIntervals[tour]);
+				updateParametersForAllVisitsAfterRemoval(tour);
 				updateMaxShiftForPreviousVisitsAndThis(endingPOIIntervals[tour].getPreviousPOIInterval());
 			}
-			if(previouslyPivotPOIsNotInsertedInFirstIteration.size() != 0) {
-				for(PivotInsertData currentPivotInsertData: previouslyPivotPOIsNotInsertedInFirstIteration) {
-					sortedPossibleInserts.add(currentPivotInsertData);
-				}
-				probabilityFactor = 0;
+
+			if(previouslyPivotPOIsNotInsertedInFirstIteration.size() == 0) {
+				break;
 			}
 			else {
-				break;
+				while(previouslyPivotPOIsNotInsertedInFirstIteration.size() != 0) {
+					PivotInsertData currentPivotInsertData = previouslyPivotPOIsNotInsertedInFirstIteration.remove(0);
+					sortedPossibleInserts.add(currentPivotInsertData);
+				}
+				currentProbabilityFactor = 0;
 			}
 		}
 		return false;
@@ -129,7 +130,7 @@ public class Solution implements Cloneable {
 			}
 
 			int shiftForNewPOI = getShift(currentPOI, endingPOIIntervals[tour]);
-			if(!canInsertBeforeThisPOI(currentPOI, endingPOIIntervals[tour], shiftForNewPOI)) {
+			if(exceedsAllowedTimeLimits(currentPOI, endingPOIIntervals[tour], shiftForNewPOI)) {
 				continue;
 			}
 
@@ -220,10 +221,9 @@ public class Solution implements Cloneable {
 		return POIIntervalAfterRemovePosition;
 	}
 
-	public void updateParametersForFollowingVisitsAfterRemoval(POIInterval POIIntervalFollowingLastRemove, 
-																POIInterval endingPOIInterval) {
-		POIInterval currentPOIInterval = POIIntervalFollowingLastRemove;
-		while(currentPOIInterval != endingPOIInterval) {
+	public void updateParametersForAllVisitsAfterRemoval(int tour) {
+		POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+		while(currentPOIInterval != endingPOIIntervals[tour]) {
 			int arrivalTime = calculateArrivalTime(currentPOIInterval.getPreviousPOIInterval(), currentPOIInterval.getPOI().getID());
 			currentPOIInterval.setArrivalTime(arrivalTime);
 
@@ -234,9 +234,9 @@ public class Solution implements Cloneable {
 			currentPOIInterval.updateWaitTime();
 			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 		}
-		int arrivalTime = calculateArrivalTime(endingPOIInterval.getPreviousPOIInterval(), endingPOIInterval.getPOI().getID());
-		endingPOIInterval.setArrivalTime(arrivalTime);
-		endingPOIInterval.updateWaitTime();
+		int arrivalTime = calculateArrivalTime(endingPOIIntervals[tour].getPreviousPOIInterval(), endingPOIIntervals[tour].getPOI().getID());
+		endingPOIIntervals[tour].setArrivalTime(arrivalTime);
+		endingPOIIntervals[tour].updateWaitTime();
 	}
 
 	public void updateMaxShiftForPreviousVisitsAndThis(POIInterval thisPOIInterval) {
@@ -247,9 +247,9 @@ public class Solution implements Cloneable {
 		}
 	}
 
-	public void changePivots() {
+	public void changePivots(int probabilityFactor) {
 		removeAllPOIs();
-		insertPivots(0, 0);
+		insertPivots(0, 0, probabilityFactor);
 	}
 
 	public void removeAllPOIs() {
@@ -265,7 +265,7 @@ public class Solution implements Cloneable {
 			this.tourSizes[tour] = 0;
 			this.score = 0;
 			this.totalMoneySpent = 0;
-			updateParametersForFollowingVisitsAfterRemoval(startingPOIIntervals[tour].getNextPOIInterval(), endingPOIIntervals[tour]);
+			updateParametersForAllVisitsAfterRemoval(tour);
 			this.availableTime[tour] = endingPOIIntervals[tour].getWaitTime();
 		}
 	}
@@ -305,7 +305,7 @@ public class Solution implements Cloneable {
 				while(POIIntervalAfterInsertPosition != null &&	POIStillOpen(currentPOI, POIIntervalAfterInsertPosition.getPreviousPOIInterval())) {
 					int shiftForNewPOI = getShift(currentPOI, POIIntervalAfterInsertPosition);
 
-					if(!canInsertBeforeThisPOI(currentPOI, POIIntervalAfterInsertPosition, shiftForNewPOI)) {
+					if(exceedsAllowedTimeLimits(currentPOI, POIIntervalAfterInsertPosition, shiftForNewPOI)) {
 						POIIntervalAfterInsertPosition = POIIntervalAfterInsertPosition.getNextPOIInterval();
 						continue;
 					}
@@ -389,9 +389,9 @@ public class Solution implements Cloneable {
 		return shiftOfNewPOI;
 	}
 
-	public boolean canInsertBeforeThisPOI(POI POIToBeInserted, POIInterval POIIntervalAfterInsertPosition, int shiftForNewPOI) {
+	public boolean exceedsAllowedTimeLimits(POI POIToBeInserted, POIInterval POIIntervalAfterInsertPosition, int shiftForNewPOI) {
 		if(shiftForNewPOI > POIIntervalAfterInsertPosition.getWaitTime() + POIIntervalAfterInsertPosition.getMaxShift()) {
-			return false;
+			return true;
 		}
 		
 		POIInterval POIIntervalBeforeInsertPosition = POIIntervalAfterInsertPosition.getPreviousPOIInterval();
@@ -399,10 +399,10 @@ public class Solution implements Cloneable {
 
 		int startingTime = MathExtension.getMaxOfTwo(arrivalTime, POIToBeInserted.getOpeningTime());
 		if(startingTime > POIToBeInserted.getClosingTime()) {
-			return false;
+			return true;
 		}
 
-		return true;
+		return false;
 	}
 
 	public float calculateDenominatorComponent(int shiftForNewPOI, int entranceFee, int tour) {
@@ -452,6 +452,7 @@ public class Solution implements Cloneable {
 
 			POIInterval currentPOIInterval = getNthPOIIntervalInTourX(startRemoveAt % tourSizes[tour], tour);
 
+			// the second condition here prevents removing the pivot POIs
 			while(currentDayRemovals < removeNConsecutiveVisits && this.tourSizes[tour] > problemInput.getPatternsForTour(tour).length) {
 				int iterationsWithoutFindingRemovablePOI = 0;
 				POIInterval lastNonPivotPOIInterval = null;
@@ -481,7 +482,7 @@ public class Solution implements Cloneable {
 				currentDayRemovals++;
 			}
 			
-			updateParametersForFollowingVisitsAfterRemoval(startingPOIIntervals[tour].getNextPOIInterval(), endingPOIIntervals[tour]);
+			updateParametersForAllVisitsAfterRemoval(tour);
 			updateMaxShiftForPreviousVisitsAndThis(endingPOIIntervals[tour].getPreviousPOIInterval());
 		}
 	}

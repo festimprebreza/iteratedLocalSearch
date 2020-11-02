@@ -162,22 +162,18 @@ public class ProblemInput {
 		int openingTime = Math.round(Float.parseFloat(lineComponents[5]) * 100);
 		int closingTime = Math.round(Float.parseFloat(lineComponents[6]) * 100);
 		int entranceFee = 0;
-		boolean[] typeBitArray = {};
+		ArrayList<Integer> types = new ArrayList<>();
 
 		if(lineComponents.length > 7) {
 			entranceFee = Math.round(Float.parseFloat(lineComponents[7]) * 100);
-			typeBitArray = new boolean[lineComponents.length - 7];
 			for(int component = 8; component < lineComponents.length; component++) {
 				if(lineComponents[component].equals("1")) {
-					typeBitArray[component - 8] = true;
-				}
-				else {
-					typeBitArray[component - 8] = false;
+					types.add(component - 8);
 				}
 			}
 		}
 
-		return new POI(ID, xCoordinate, yCoordinate, duration, score, openingTime, closingTime, entranceFee, typeBitArray);
+		return new POI(ID, xCoordinate, yCoordinate, duration, score, openingTime, closingTime, entranceFee, types);
 	}
 
 	public int getTourCount() {
@@ -212,16 +208,8 @@ public class ProblemInput {
 		return this.maxAllowedVisitsForEachType[type];
 	}
 
-	public int[][] getPatternsForEachTour() {
-		return this.patternsForEachTour;
-	}
-
 	public int[] getPatternsForTour(int tour) {
 		return this.patternsForEachTour[tour];
-	}
-
-	public HashMap<Integer, ArrayList<POI>> getPOIsForEachPatternType() {
-		return this.POIsForEachPatternType;
 	}
 
 	public ArrayList<POI> getPOIsForPatternType(int type) {

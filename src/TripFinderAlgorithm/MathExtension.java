@@ -3,7 +3,7 @@ package TripFinderAlgorithm;
 public abstract class MathExtension {
 	public static double getEuclidianDistanceOfTwoPOIs(POI fromPOI, POI toPOI) {
 		long insideSquareRoot = (long)(Math.pow(fromPOI.getXCoordinate() - toPOI.getXCoordinate(), 2) + 
-								Math.pow(fromPOI.getYCoordinate() - toPOI.getYCoordinate(), 2));
+										Math.pow(fromPOI.getYCoordinate() - toPOI.getYCoordinate(), 2));
 		return Math.sqrt((double)insideSquareRoot);
 	}
 

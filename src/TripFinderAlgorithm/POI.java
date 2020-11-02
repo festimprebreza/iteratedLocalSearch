@@ -13,15 +13,14 @@ public class POI implements Cloneable {
 	private int closingTime;
 	private HashMap<Integer, Integer> travelDistances;
 	private int entranceFee;
-	private boolean[] typeBitArray;
 	private ArrayList<Integer> types;
 
 	private boolean isAssigned;
 	private int[] lastRemovedIteration;
-	private boolean[] alreadyUsedAsAPivot;
+	private HashMap<Integer, Boolean> alreadyUsedAsAPivot;
 
 	public POI(int ID, long xCoordinate, long yCoordinate, int duration, int score, int openingTime, 
-				int closingTime, int entranceFee, boolean[] typeBitArray) {
+				int closingTime, int entranceFee, ArrayList<Integer> types) {
 		this.ID = ID;
 		this.xCoordinate = xCoordinate;
 		this.yCoordinate = yCoordinate;
@@ -30,15 +29,9 @@ public class POI implements Cloneable {
 		this.openingTime = openingTime;
 		this.closingTime = closingTime;
 		this.entranceFee = entranceFee;
-		this.typeBitArray = typeBitArray;
-		alreadyUsedAsAPivot = new boolean[typeBitArray.length];
+		this.types = types;
 
-		types = new ArrayList<>();
-		for(int type = 0; type < typeBitArray.length; type++) {
-			if(typeBitArray[type]) {
-				types.add(type);
-			}
-		}
+		alreadyUsedAsAPivot = new HashMap<>();
 	}
 
 	public int getID() {
@@ -77,10 +70,6 @@ public class POI implements Cloneable {
 		return this.types;
 	}
 
-	public boolean isOfType(int type) {
-		return typeBitArray[type];
-	}
-
 	public boolean isAssigned() {
 		return this.isAssigned;
 	}
@@ -116,11 +105,14 @@ public class POI implements Cloneable {
 	}
 
 	public boolean hasAlreadyBeenUsedAsAPivotForType(int type) {
-		return this.alreadyUsedAsAPivot[type];
+		if(this.alreadyUsedAsAPivot.containsKey(type)) {
+			return true;
+		}
+		return false;
 	}
 
 	public void setUsedAsPivotForType(int type) {
-		this.alreadyUsedAsAPivot[type] = true;
+		this.alreadyUsedAsAPivot.put(type, true);
 	}
 
 	@Override
