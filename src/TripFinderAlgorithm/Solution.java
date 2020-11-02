@@ -15,6 +15,7 @@ public class Solution implements Cloneable {
 	private int[] tourSizes;
 	private int sizeOfSmallestTour = Integer.MAX_VALUE;
 	private int[] availableTime;
+	public int justInsertedID = -1;
 
 	public Solution(ProblemInput problemInput) {
 		this.problemInput = problemInput;
@@ -151,6 +152,7 @@ public class Solution implements Cloneable {
 	public POIInterval insertAndUpdateData(POIInsertData bestPOIIInsertData) {
 		POIInterval newPOIInterval = insertPOI(bestPOIIInsertData.containedPOI, bestPOIIInsertData.POIIntervalAfterInsertPosition, 
 												bestPOIIInsertData.assignedType);
+		this.justInsertedID = bestPOIIInsertData.containedPOI.getID();
 		calculateArriveStartAndWaitForNewPOI(newPOIInterval);
 		updateParametersForFollowingVisitsAfterInsert(newPOIInterval.getNextPOIInterval(), bestPOIIInsertData.shiftOfPOI);
 		updateMaxShiftForPreviousVisitsAndThis(newPOIInterval);		
@@ -682,6 +684,18 @@ public class Solution implements Cloneable {
 
 	public int[] getTourSizes() {
 		return this.tourSizes;
+	}
+
+	public POIInterval[] getStartingPOIInterval() {
+		return this.startingPOIIntervals;
+	}
+
+	public POIInterval[] getEndingPOIInterval() {
+		return this.endingPOIIntervals;
+	}
+
+	public ProblemInput getProblemInput() {
+		return this.problemInput;
 	}
 
 	@Override
