@@ -65,6 +65,10 @@ public class Solution implements Cloneable {
 		return totalVisits;
 	}
 
+	public int[] getTourSizes() {
+		return this.tourSizes;
+	}
+
 	public boolean notStuckInLocalOptimum() {
 		return !this.stuckInLocalOptimum;
 	}
@@ -534,13 +538,16 @@ public class Solution implements Cloneable {
 		return this.sizeOfSmallestTour;
 	}
 
-	// delete in the end
 	public boolean isValid() {
-		// opening and closing
 		int score = 0;
 		int totalMoneySpent = 0;
+
+		int[] availableTimes = new int[problemInput.getTourCount()];
+		int[] tourSizes = new int[problemInput.getTourCount()];
+
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			POIInterval currentPOIInterval = startingPOIIntervals[tour];
+
 			while(currentPOIInterval != endingPOIIntervals[tour]) {
 				if(currentPOIInterval.getStartingTime() < currentPOIInterval.getPOI().getOpeningTime()) {
 					System.out.println("Opening time violated!");
@@ -550,79 +557,143 @@ public class Solution implements Cloneable {
 					System.out.println("Closing time violated!");
 					return false;
 				}
+				if(currentPOIInterval.getStartingTime() + currentPOIInterval.getPOI().getDuration() != currentPOIInterval.getEndingTime()) {
+					System.out.println("Duration does not match!");
+					return false;
+				}
+				if(currentPOIInterval != currentPOIInterval.getNextPOIInterval().getPreviousPOIInterval()) {
+					System.out.println("Pointers do not match!");
+					return false;
+				}
+
 				score += currentPOIInterval.getPOI().getScore();
 				totalMoneySpent += currentPOIInterval.getPOI().getEntranceFee();
 				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 			}
+			availableTimes[tour]  = 0;
+			tourSizes[tour] = 0;
 		}
-		// score
+
 		if(score != this.getScore()) {
 			System.out.println("Score does not match!");
 			return false;
 		}
-		// budget
-		if(totalMoneySpent != this.totalMoneySpent || totalMoneySpent > problemInput.getBudgetLimit()) {
-			System.out.println("Budget exceeded!");
+
+		if(totalMoneySpent != this.totalMoneySpent) {
+			System.out.println("Budget does not match!");
 			return false;
 		}
-		// travel
-		int[] availableTimes = new int[problemInput.getTourCount()];
-		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
-			availableTimes[tour]  = 0;
+
+		if(totalMoneySpent > problemInput.getBudgetLimit()) {
+			System.out.println("Budget exceeded");
+			return false;
 		}
+
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+
 			while(currentPOIInterval != null) {
 				availableTimes[tour] += currentPOIInterval.getWaitTime();
 				int currentTravelTime = currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID());
-				if(currentPOIInterval.getArrivalTime() - currentPOIInterval.getPreviousPOIInterval().getEndingTime() != currentTravelTime) {
+
+				if(currentPOIInterval.getPreviousPOIInterval().getEndingTime() + currentTravelTime != currentPOIInterval.getArrivalTime()) {
 					System.out.println("Arrival time does not match!");
 					return false;
 				}
+
 				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 			}
-		}
-		// available time
-		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+
 			if(availableTimes[tour] != this.availableTime[tour]) {
+				System.out.println("Available time does not match!");
 				return false;
 			}
 		}
-		// maxshift
+
 		int[] visitCountOfEachType = new int[this.visitCountOfEachType.length];
+
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			POIInterval currentPOIInterval = endingPOIIntervals[tour].getPreviousPOIInterval();
+			if(endingPOIIntervals[tour].getMaxShift() != 0) {
+				System.out.println("Max shift does not match!");
+				return false;
+			}
+
 			while(currentPOIInterval != startingPOIIntervals[tour]) {
-				int currentMaxShift1 = currentPOIInterval.getPOI().getClosingTime() - currentPOIInterval.getStartingTime();
-				int currentMaxShift2 = currentPOIInterval.getNextPOIInterval().getWaitTime() + currentPOIInterval.getNextPOIInterval().getMaxShift();
-				int currentMaxShift = MathExtension.getMinOfTwo(currentMaxShift1, currentMaxShift2);
+				int currentMaxShiftComponent1 = currentPOIInterval.getPOI().getClosingTime() - currentPOIInterval.getStartingTime();
+				int currentMaxShiftComponent2 = currentPOIInterval.getNextPOIInterval().getWaitTime() + currentPOIInterval.getNextPOIInterval().getMaxShift();
+				int currentMaxShift = MathExtension.getMinOfTwo(currentMaxShiftComponent1, currentMaxShiftComponent2);
+
 				if(currentMaxShift != currentPOIInterval.getMaxShift()) {
 					System.out.println("Max shift does not match!");
 					return false;
 				}
+
 				visitCountOfEachType[currentPOIInterval.getAssignedType()] += 1;
 				currentPOIInterval = currentPOIInterval.getPreviousPOIInterval();
 			}
+			if(startingPOIIntervals[tour].getMaxShift() != 0) {
+				System.out.println("Max shift does not match!");
+				return false;
+			}
 		}
-		// max allowed visit of type
+
 		for(int type = 0; type < visitCountOfEachType.length; type++) {
-			if(visitCountOfEachType[type] > this.visitCountOfEachType[type]) {
+			if(visitCountOfEachType[type] != this.visitCountOfEachType[type]) {
+				System.out.println("Allowed visits of certain type do not match!");
+				return false;
+			}
+		}
+		
+		for(int type = 0; type < visitCountOfEachType.length; type++) {
+			if(visitCountOfEachType[type] > problemInput.getMaxAllowedVisitsForType(type)) {
 				System.out.println("Max allowed visits of a type exceeded!");
 				return false;
 			}
 		}
-		// wait
+		
 		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
 			POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+
 			while(currentPOIInterval != null) {
 				int currentWaitTime = currentPOIInterval.getStartingTime() - currentPOIInterval.getArrivalTime();
+
 				if(currentWaitTime != currentPOIInterval.getWaitTime()) {
 					System.out.println("Wait time violated!");
 					return false;
 				}
+
 				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 			}
 		}
+
+		for(int tour = 0; tour < problemInput.getTourCount(); tour++) {
+			POIInterval currentPOIInterval = startingPOIIntervals[tour].getNextPOIInterval();
+			int[] patternTypesForTour = problemInput.getPatternsForTour(tour);
+			int patternCounter = 0;
+			while(currentPOIInterval != endingPOIIntervals[tour]) {
+				if(currentPOIInterval.isPivot()) {
+					if(patternTypesForTour[patternCounter] != currentPOIInterval.getAssignedType()) {
+						System.out.println("Pattern types do not match!");
+						return false;
+					}
+					patternCounter++;
+				}
+				
+				tourSizes[tour] += 1;
+				currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+			}
+
+			if(patternCounter < patternTypesForTour.length) {
+				System.out.println("Not all pattern types present!");
+				return false;
+			}
+
+			if(tourSizes[tour] != this.tourSizes[tour]) {
+				System.out.println("Tour sizes do not match!");
+			}
+		}
+
 		return true;
 	}
 
@@ -690,10 +761,6 @@ public class Solution implements Cloneable {
 			currentPOIInterval = currentPOIInterval.getNextPOIInterval();
 		}
 		System.out.println("0");
-	}
-
-	public int[] getTourSizes() {
-		return this.tourSizes;
 	}
 
 	@Override
