@@ -45,6 +45,18 @@ public class Solution implements Cloneable {
 		return this.score;
 	}
 
+	public int getTotalMoneySpent() {
+		return this.totalMoneySpent;
+	}
+
+	public int getVisitCountOfType(int type) {
+		return this.visitCountOfEachType[type];
+	}
+
+	public int getAvailableTimeOfTour(int tour) {
+		return this.availableTime[tour];
+	}
+
 	public int getVisits() {
 		int totalVisits = 0;
 		for(int tour = 0; tour < tourSizes.length; tour++) {
