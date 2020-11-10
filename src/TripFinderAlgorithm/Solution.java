@@ -34,8 +34,7 @@ public class Solution implements Cloneable {
 			this.startingPOIIntervals[tour].setNextPOIInterval(this.endingPOIIntervals[tour]);
 			this.endingPOIIntervals[tour].setPreviousPOIInterval(this.startingPOIIntervals[tour]);
 
-			this.endingPOIIntervals[tour].setArrivalTime(this.startingPOIIntervals[tour].getPOI().getTravelTimeToPOI(
-																			this.endingPOIIntervals[tour].getPOI().getID()));
+			this.endingPOIIntervals[tour].setArrivalTime(0);
 			this.endingPOIIntervals[tour].updateWaitTime();
 			this.availableTime[tour] = this.endingPOIIntervals[tour].getWaitTime();
 		}	
@@ -159,7 +158,7 @@ public class Solution implements Cloneable {
 	}
 
 	public int getWaitTimeIfAssigned(POI POIToBeInserted, POIInterval POIIntervalBeforeInsertPosition) {
-		int arrivalTime = POIIntervalBeforeInsertPosition.getPOI().getTravelTimeToPOI(POIToBeInserted.getID()) + 
+		int arrivalTime = problemInput.getDistanceFromPOIToPOI(POIIntervalBeforeInsertPosition.getPOI().getID(), POIToBeInserted.getID()) + 
 							POIIntervalBeforeInsertPosition.getEndingTime();
 		return MathExtension.getMaxOfTwo(POIToBeInserted.getOpeningTime() - arrivalTime, 0);
 	}
@@ -201,8 +200,8 @@ public class Solution implements Cloneable {
 		newPOIInterval.updateWaitTime();
 	}
 
-	public static int calculateArrivalTime(POIInterval previousPOIInterval, int currentPOIID) {
-		return previousPOIInterval.getEndingTime() + previousPOIInterval.getPOI().getTravelTimeToPOI(currentPOIID);
+	public int calculateArrivalTime(POIInterval previousPOIInterval, int currentPOIID) {
+		return previousPOIInterval.getEndingTime() + problemInput.getDistanceFromPOIToPOI(previousPOIInterval.getPOI().getID(), currentPOIID);
 	}
 
 	public void updateSolutionParametersAfterInsert(POIInterval POIIntervalInserted, int tour, int shiftOfPOI) {
@@ -219,9 +218,12 @@ public class Solution implements Cloneable {
 		this.totalMoneySpent -= POIIntervalToBeRemoved.getPOI().getEntranceFee();
 		this.visitCountOfEachType[POIIntervalToBeRemoved.getAssignedType()] -= 1;
 		this.availableTime[tour] += POIIntervalToBeRemoved.getPOI().getDuration() + 
-						POIIntervalToBeRemoved.getPOI().getTravelTimeToPOI(POIIntervalToBeRemoved.getPreviousPOIInterval().getPOI().getID()) + 
-						POIIntervalToBeRemoved.getPOI().getTravelTimeToPOI(POIIntervalToBeRemoved.getNextPOIInterval().getPOI().getID()) -
-						POIIntervalToBeRemoved.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(POIIntervalToBeRemoved.getNextPOIInterval().getPOI().getID());
+						problemInput.getDistanceFromPOIToPOI(POIIntervalToBeRemoved.getPOI().getID(), 
+																POIIntervalToBeRemoved.getPreviousPOIInterval().getPOI().getID()) +
+						problemInput.getDistanceFromPOIToPOI(POIIntervalToBeRemoved.getPOI().getID(), 
+																POIIntervalToBeRemoved.getNextPOIInterval().getPOI().getID()) -
+						problemInput.getDistanceFromPOIToPOI(POIIntervalToBeRemoved.getPreviousPOIInterval().getPOI().getID(), 
+																POIIntervalToBeRemoved.getNextPOIInterval().getPOI().getID());
 		this.tourSizes[tour] -= 1;
 	}
 
@@ -392,8 +394,8 @@ public class Solution implements Cloneable {
 	public int getShift(POI POIToBeInserted, POIInterval POIIntervalAfterInsertPosition) {
 		POIInterval POIIntervalBeforeInsertPosition = POIIntervalAfterInsertPosition.getPreviousPOIInterval();
 
-		int travelTimeToNewPOI = POIIntervalBeforeInsertPosition.getPOI().getTravelTimeToPOI(POIToBeInserted.getID());
-		int travelTimeFromNewPOIToNext = POIToBeInserted.getTravelTimeToPOI(POIIntervalAfterInsertPosition.getPOI().getID());
+		int travelTimeToNewPOI = problemInput.getDistanceFromPOIToPOI(POIIntervalBeforeInsertPosition.getPOI().getID(), POIToBeInserted.getID());
+		int travelTimeFromNewPOIToNext = problemInput.getDistanceFromPOIToPOI(POIToBeInserted.getID(), POIIntervalAfterInsertPosition.getPOI().getID());
 		int currentTravelTime = POIIntervalBeforeInsertPosition.getTravelTime();
 
 		int arrivalTimeForNewPOI = POIIntervalBeforeInsertPosition.getEndingTime() + travelTimeToNewPOI;
@@ -594,7 +596,7 @@ public class Solution implements Cloneable {
 
 			while(currentPOIInterval != null) {
 				availableTimes[tour] += currentPOIInterval.getWaitTime();
-				int currentTravelTime = currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID());
+				int currentTravelTime = problemInput.getDistanceFromPOIToPOI(currentPOIInterval.getPreviousPOIInterval().getPOI().getID(), currentPOIInterval.getPOI().getID());
 
 				if(currentPOIInterval.getPreviousPOIInterval().getEndingTime() + currentTravelTime != currentPOIInterval.getArrivalTime()) {
 					System.out.println("Arrival time does not match!");
@@ -718,7 +720,7 @@ public class Solution implements Cloneable {
 						resultPart2 += "....";
 					}
 					if(currentPOIInterval.getPreviousPOIInterval().getArrivalTime() != 0) {
-						int expectedArrivalTime = currentPOIInterval.getPreviousPOIInterval().getEndingTime() + currentPOIInterval.getPreviousPOIInterval().getPOI().getTravelTimeToPOI(currentPOIInterval.getPOI().getID());
+						int expectedArrivalTime = currentPOIInterval.getPreviousPOIInterval().getEndingTime() + problemInput.getDistanceFromPOIToPOI(currentPOIInterval.getPreviousPOIInterval().getPOI().getID(), currentPOIInterval.getPOI().getID());
 						String resultComponent1 = expectedArrivalTime == currentPOIInterval.getArrivalTime()? "true": "FALSEE!";
 						int lastMaxShift = currentPOIInterval.getPreviousPOIInterval().getMaxShift();
 						int lastMaxShift1 = currentPOIInterval.getPreviousPOIInterval().getPOI().getClosingTime() - currentPOIInterval.getPreviousPOIInterval().getStartingTime();

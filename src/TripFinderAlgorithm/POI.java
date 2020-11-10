@@ -11,7 +11,6 @@ public class POI implements Cloneable {
 	private int score;
 	private int openingTime;
 	private int closingTime;
-	private HashMap<Integer, Integer> travelDistances;
 	private int entranceFee;
 	private ArrayList<Integer> types;
 
@@ -76,17 +75,6 @@ public class POI implements Cloneable {
 
 	public void setAssigned(boolean isAssigned) {
 		this.isAssigned = isAssigned;
-	}
-
-	public void setTravelDistances(HashMap<Integer, Integer> travelDistances) {
-		this.travelDistances = travelDistances;
-	}
-
-	public int getTravelTimeToPOI(int toPOIID) {
-		if(this.ID == toPOIID) {
-			return 0;
-		}
-		return travelDistances.get(toPOIID);
 	}
 
 	public void createTabuInfo(int tourCount) {

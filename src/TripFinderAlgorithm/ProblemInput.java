@@ -17,6 +17,7 @@ public class ProblemInput {
 	private int[][] patternsForEachTour;
 	private boolean solomon;
 	private HashMap<Integer, ArrayList<POI>> POIsForEachPatternType;
+	private HashMap<Integer, HashMap<Integer, Integer>> travelDistances;
 
 	private ProblemInput() {
 
@@ -40,37 +41,26 @@ public class ProblemInput {
 	}
 
 	public void assignTravelDistances() {
+		HashMap<Integer, HashMap<Integer, Integer>> travelDistances = new HashMap<>();
 		HashMap<Integer, Integer> travelDistancesForPOINumberX;
-		for(POI fromPOI: visitablePOIs) {
+		travelDistancesForPOINumberX = new HashMap<>();
+		for(POI currentPOI: visitablePOIs) {
+			travelDistancesForPOINumberX.put(currentPOI.getID(), getDistance(startingPOI, currentPOI));
+		}
+		travelDistances.put(startingPOI.getID(), travelDistancesForPOINumberX);
+
+		for(int i = 0; i < visitablePOIs.length - 1; i++) {
 			travelDistancesForPOINumberX = new HashMap<>();
-			for(POI toPOI: visitablePOIs) {
-				if(fromPOI == toPOI) {
-					continue;
-				}
-				travelDistancesForPOINumberX.put(toPOI.getID(), getDistance(fromPOI, toPOI));
+			for(int j = i + 1; j < visitablePOIs.length; j++) {
+				travelDistancesForPOINumberX.put(visitablePOIs[j].getID(), getDistance(visitablePOIs[i], visitablePOIs[j]));
 			}
-			// put data for starting POI
-			travelDistancesForPOINumberX.put(startingPOI.getID(), getDistance(fromPOI, startingPOI));
-			// put data for endingPOI
-			travelDistancesForPOINumberX.put(endingPOI.getID(), getDistance(fromPOI, endingPOI));
-			fromPOI.setTravelDistances(travelDistancesForPOINumberX);
+			travelDistances.put(visitablePOIs[i].getID(), travelDistancesForPOINumberX);
 		}
 
-		travelDistancesForPOINumberX = new HashMap<>();
-		// get data for startingPOI
-		for(POI toPOI: visitablePOIs) {
-			travelDistancesForPOINumberX.put(toPOI.getID(), getDistance(startingPOI, toPOI));
-		}
-		startingPOI.setTravelDistances(travelDistancesForPOINumberX);
-		travelDistancesForPOINumberX = new HashMap<>();
-		// get data for endingPOI
-		for(POI toPOI: visitablePOIs) {
-			travelDistancesForPOINumberX.put(toPOI.getID(), getDistance(endingPOI, toPOI));
-		}
-		endingPOI.setTravelDistances(travelDistancesForPOINumberX);
+		this.travelDistances = travelDistances;
 	}
 
-	public int getDistance(POI fromPOI, POI toPOI) {
+	private int getDistance(POI fromPOI, POI toPOI) {
 		double euclidianDistance = MathExtension.getEuclidianDistanceOfTwoPOIs(fromPOI, toPOI);
 		if(solomon) {
 			return ((int)(euclidianDistance / 100)) * 10;
@@ -214,5 +204,17 @@ public class ProblemInput {
 
 	public ArrayList<POI> getPOIsForPatternType(int type) {
 		return this.POIsForEachPatternType.get(type);
+	}
+
+	public int getDistanceFromPOIToPOI(int fromPOIID, int toPOIID) {
+		if(fromPOIID < toPOIID) {
+			return this.travelDistances.get(fromPOIID).get(toPOIID);
+		}
+		else if(fromPOIID == toPOIID) {
+			return 0;
+		}
+		else {
+			return this.travelDistances.get(toPOIID).get(fromPOIID);
+		}
 	}
 }
