@@ -4,7 +4,7 @@ public class IteratedLocalSearch {
 	private final int FACTOR_NO_IMPROVEMENT = 10;
 	private final int TABU_ITERATIONS = 2;
 	private final int NUMBER_OF_PIVOT_CHANGES_DURING_ONE_FULL_EXECUTION = 4;
-	private final int PROBABILITY_FACTOR = 7;
+	private final int PROBABILITY_OF_NOT_REUSING_PIVOTS = 7;
 	private int startRemoveAt = 0;
 	private int removeNConsecutiveVisits = 1;
 	private Solution bestSolution;
@@ -12,11 +12,12 @@ public class IteratedLocalSearch {
 	public void solve(ProblemInput problemInput) {
 		final int MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT = FACTOR_NO_IMPROVEMENT * getSizeOfFirstRoute(problemInput);
 		final int REMOVE_N_CONSECUTIVE_VISITS_LIMIT = (int)(problemInput.getVisitablePOICount() / (3 * problemInput.getTourCount()));
+		final int PIVOT_CHANGE_LIMIT = MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT / (NUMBER_OF_PIVOT_CHANGES_DURING_ONE_FULL_EXECUTION + 1);
 
 		Solution currentSolution = new Solution(problemInput);
 		bestSolution = (Solution)currentSolution.clone();
 
-		if(!currentSolution.insertPivots(0, 0, PROBABILITY_FACTOR)) {
+		if(!currentSolution.insertPivots(0, 0, PROBABILITY_OF_NOT_REUSING_PIVOTS)) {
 			return;
 		}
 
@@ -24,8 +25,8 @@ public class IteratedLocalSearch {
 		int pivotChangeCounter = 0;
 		int numberOfTimesWithNoImprovement = 0;
 		while(numberOfTimesWithNoImprovement < MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT) {
-			if(pivotChangeCounter == MAXIMUM_NUMBER_OF_TIMES_WITH_NO_IMPROVEMENT / (NUMBER_OF_PIVOT_CHANGES_DURING_ONE_FULL_EXECUTION + 1)) {
-				currentSolution.changePivots(PROBABILITY_FACTOR);
+			if(pivotChangeCounter == PIVOT_CHANGE_LIMIT) {
+				currentSolution.changePivots(PROBABILITY_OF_NOT_REUSING_PIVOTS);
 				pivotChangeCounter = 0;
 			}
 
