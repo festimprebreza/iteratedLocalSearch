@@ -37,8 +37,6 @@ public class IteratedLocalSearch {
 					return;
 				}
 			}
-			// System.out.println("INSERTION STEP; Number of times no improvement: " + numberOfTimesWithNoImprovement);
-			// System.out.println(currentSolution);
 
 			if(currentSolution.getScore() > bestSolution.getScore()) {
 				bestSolution = (Solution)currentSolution.clone();
@@ -54,8 +52,6 @@ public class IteratedLocalSearch {
 				System.out.println("Solution is not valid");
 					return;
 			}
-			// System.out.println("SHAKE STEP; Sd parameter: " + startRemoveAt + "; Rd parameter: " + removeNConsecutiveVisits);
-			// System.out.println(currentSolution);
 
 			startRemoveAt += removeNConsecutiveVisits;
 			removeNConsecutiveVisits++;
