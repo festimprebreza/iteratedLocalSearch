@@ -693,6 +693,7 @@ public class Solution implements Cloneable {
 
 			if(tourSizes[tour] != this.tourSizes[tour]) {
 				System.out.println("Tour sizes do not match!");
+				return false;
 			}
 		}
 
