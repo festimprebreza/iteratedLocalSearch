@@ -18,7 +18,9 @@ public class TripGenerator {
 		IteratedLocalSearch ILSAlgorithm = new IteratedLocalSearch();
 		ILSAlgorithm.solve(problemInput);
 		Solution bestSolution = ILSAlgorithm.getBestSolution();
-		System.out.println("BEST SOLUTION: ");
-		System.out.println(bestSolution);
+		if(bestSolution.isValid()) {
+			System.out.println("BEST SOLUTION: ");
+			System.out.println(bestSolution);
+		}
 	}
 }

@@ -660,7 +660,7 @@ public class Solution implements Cloneable {
 			while(currentPOIInterval != null) {
 				int currentWaitTime = currentPOIInterval.getStartingTime() - currentPOIInterval.getArrivalTime();
 
-				if(currentWaitTime != currentPOIInterval.getWaitTime()) {
+				if(currentWaitTime != currentPOIInterval.getWaitTime() || currentWaitTime < 0) {
 					System.out.println("Wait time violated!");
 					return false;
 				}
@@ -782,7 +782,11 @@ public class Solution implements Cloneable {
 		for(int tour = 0; tour < this.problemInput.getTourCount(); tour++) {
 			try {
 				clonedStartingPOIIntervals[tour] = (POIInterval)this.startingPOIIntervals[tour].clone();
-				clonedEndingPOIIntervals[tour] = (POIInterval)this.endingPOIIntervals[tour].clone();
+				POIInterval currentPOIInterval = clonedStartingPOIIntervals[tour].getNextPOIInterval();
+				while(currentPOIInterval.getPOI() != this.endingPOIIntervals[tour].getPOI()) {
+					currentPOIInterval = currentPOIInterval.getNextPOIInterval();
+				}
+				clonedEndingPOIIntervals[tour] = currentPOIInterval;
 			}
 			catch(CloneNotSupportedException ex) {
 				System.out.println("Could not clone POIInterval's. " + ex.getMessage());
@@ -801,6 +805,11 @@ public class Solution implements Cloneable {
 		clonedSolution.visitCountOfEachType = new int[this.visitCountOfEachType.length];
 		for(int type = 0; type < this.visitCountOfEachType.length; type++) {
 			clonedSolution.visitCountOfEachType[type] = this.visitCountOfEachType[type];
+		}
+
+		clonedSolution.availableTime = new int[tourSizes.length];
+		for(int tour = 0; tour < tourSizes.length; tour++) {
+			clonedSolution.availableTime[tour] = availableTime[tour];
 		}
 
 		return clonedSolution;
